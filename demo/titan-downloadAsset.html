@@ -1,0 +1,97 @@
+<!doctype html>
+<html class="default no-js">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Titan Storage SDK Documentation</title>
+    <meta name="description" content="Documentation for Titan Storage SDK">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/TitanStorage.css">
+    <script src="./js/umd/TitanStorage.js"></script>
+</head>
+
+<body>
+    <div class="container container-main">
+        <div class="row">
+            <div class="col-12 col-content">
+                <section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-namespace">
+                    <a name="fileDownLoad" class="tsd-anchor"></a>
+                    <h3>downloadAsset</h3>
+                    <p>This method handles the downloading of files or folders from Titan Storage.</p>
+
+                    <h4>Function Signature</h4>
+                    <pre><code>const result = await downloadAsset(options, onProgress);</code></pre>
+
+                    <h4>Example</h4>
+                    <pre><code>const options = {
+        areaId: "",
+        userId: "",
+        assetCid: "",
+        assetType: ""}
+	const result = await sdk.downloadAsset(options, (progress) => {
+		console.log(`Download Progress: ${progress}%`);
+	});
+                    </code></pre>
+
+                    <h4>Parameters</h4>
+                    <ul>
+                        <li><strong>assetCid</strong>: <code>*</code> - The CID of the asset to be downloaded. This is a required parameter.</li>
+                        <li><strong>assetType</strong>: <code>*</code> - The type of the asset:
+                            <ul>
+                                <li><strong>file</strong>: Indicates that the asset is a file.</li>
+                                <li><strong>folder</strong>: Indicates that the asset is a folder.</li>
+                            </ul>
+                        </li>
+                        <li><strong>userId</strong>: <code>String</code> - Optional. The ID of the user. Defaults to empty. Required for external downloads.</li>
+                        <li><strong>areaId</strong>: <code>String</code> - Optional. Area ID. Defaults to empty. This parameter allows the user to specify preferred download nodes; if not provided, the nearest node is automatically selected.</li>
+                        <li><strong>onProgress</strong>: <code>Function</code> - A callback function to handle the progress of the download. It receives a single argument representing the percentage of completion as a number.</li>
+                    </ul>
+
+                    <h4>Returns</h4>
+                    <p>This function returns a Promise that resolves to an object containing:</p>
+                    <ul>
+                        <li><strong>code</strong>: A number representing the result of the download operation (0 indicates success).</li>
+                        <li><strong>data</strong>: The downloaded file or folder information upon success, which includes details like file name, size, and path.</li>
+                        <li><strong>msg</strong>: A string describing the outcome of the operation, especially in case of errors.</li>
+                    </ul>
+
+                    <h4>Error Handling</h4>
+                    <p>If the download operation fails, the <code>code</code> will be non-zero, and the <code>msg</code> will provide details about the error, such as invalid CID, network issues, or server-related problems.</p>
+
+                    <h4>Important Note</h4>
+                    <p>Ensure that the <code>assetCid</code> and <code>assetType</code> parameters are valid before calling the method to avoid unnecessary errors. Providing an incorrect <code>userId</code> or <code>areaId</code> may also lead to failed downloads.</p>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sdk = TitanStorage.getInstance();
+            // Example of file download
+            const options = {
+            				areaId: "",
+            				userId: "",
+            				assetCid: "bafkreibhr6qi65i2ikjtyvs4f6sibwwicmqhr6yzdgkzcnl2ytd4fwyt5a",
+            				assetType: "file", //file,folder 
+            				// hasTempFile: true,
+            				// tempFileName: "组 569033@2x.png",
+            				// fileSize: 24420,
+            			}
+            			TitanStorage.getInstance().downloadAsset(options, (progress) => {
+            				console.log(`下载进度: ${progress}%`);
+            			})
+            				.then(res => {
+            					console.log('downloadAsset:', res);
+            
+            				})
+            				.catch(error => {
+            					console.error('error:', error);
+            				});
+        });
+    </script>
+
+</body>
+
+</html>

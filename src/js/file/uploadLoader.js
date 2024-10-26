@@ -82,10 +82,11 @@ class UploadLoader {
         assetData: md5,
       });
 
-      //console.log(111, res.data.AlreadyExists);
+      //console.log(111, res);
+
+      // 获取地址失败 直接反馈给用户
       if (res.code != 0) return res;
-
-
+      // 如果已经存在
       if (res.data.AlreadyExists) {
         const result = await this.onCreateAsset(
           isTempUpload,
@@ -104,7 +105,6 @@ class UploadLoader {
 
       // // 封装上传逻辑的函数
       const attemptUpload = async (address) => {
-
         this.abortController = new AbortController(); // 创建 AbortController 实例
 
         const nodeId = address.NodeID.replace(/^c_/, ""); // 去掉前缀
@@ -166,7 +166,7 @@ class UploadLoader {
         result = {
           code: -1, // 上传文件错误状态码
           msg: uploadResult.msg ?? "Upload addresses failed.", // 错误信息
-          data: uploadResult.data ?? {}
+          data: uploadResult.data ?? {},
         };
       }
       ///数据上报
@@ -192,8 +192,9 @@ class UploadLoader {
       for (let attempts = 0; attempts < retryCount; attempts++) {
         try {
           const uploadResult = await attemptUpload(addresses[index]); // 尝试上传
-          log("uploadWithRetry", uploadResult)
-          if (uploadResult.code === 0 || uploadResult.code == -200) return uploadResult; // 成功上传/用户手动取消
+          log("uploadWithRetry", uploadResult);
+          if (uploadResult.code === 0 || uploadResult.code == -200)
+            return uploadResult; // 成功上传/用户手动取消
         } catch (error) {
           // 等待后重试
           await new Promise((resolve) =>

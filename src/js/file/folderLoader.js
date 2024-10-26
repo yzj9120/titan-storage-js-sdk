@@ -12,7 +12,6 @@ class FolderLoader {
     this.httpService = httpService; // 接收 Http 实例
     this.report = new Report(this.httpService); // 创建报告实例，用于记录上传结果
     this.abortController = null; // 添加一个属性来管理 AbortController
-
   }
   async uploadFile(uploadUrl, token, file, signal, onProgress) {
     try {
@@ -125,8 +124,12 @@ class FolderLoader {
         return uploadResult;
       };
 
+      console.log(111, res.data);
       // 处理返回结果 (文件已存在)
-      if (res.data.err && res.data.err === 1017) {
+      if (
+        (res.data.err && res.data.err === 1017) ||
+        (res.data.code == 0 && (res.data.List ?? []).length == 0)
+      ) {
         return onHandleData({
           code: 0,
           data: {
@@ -170,7 +173,6 @@ class FolderLoader {
   }
 
   // 创建文件夹切片的函数
-  // 创建文件夹切片的函数
   async createDirectoryStream(file, onWritableStream) {
     this.abortController = new AbortController(); // 创建AbortController
 
@@ -197,10 +199,9 @@ class FolderLoader {
             }),
             { signal: this.abortController.signal } // 将信号传递到管道中
           )
-          .pipeThrough(
-            new CAREncoderStream(),
-            { signal: this.abortController.signal }
-          )
+          .pipeThrough(new CAREncoderStream(), {
+            signal: this.abortController.signal,
+          })
           .pipeTo(
             new WritableStream({
               write(chunk) {
@@ -209,9 +210,11 @@ class FolderLoader {
                 } else {
                   // 合并数据块
                   if (!myFile || !chunk) {
-                    throw new Error('myFile or chunk is undefined');
+                    throw new Error("myFile or chunk is undefined");
                   }
-                  let mergedArray = new Uint8Array(myFile.length + chunk.length);
+                  let mergedArray = new Uint8Array(
+                    myFile.length + chunk.length
+                  );
                   mergedArray.set(myFile);
                   mergedArray.set(chunk, myFile.length);
                   myFile = mergedArray;
@@ -235,7 +238,7 @@ class FolderLoader {
                 reject(
                   onHandleData({
                     code: StatusCodes.UPLOAD_FILE_ERROR,
-                    msg: error || 'Stream aborted',
+                    msg: error || "Stream aborted",
                   })
                 );
               },
@@ -246,12 +249,10 @@ class FolderLoader {
             reject(
               onHandleData({
                 code: StatusCodes.UPLOAD_FILE_ERROR,
-                msg: error.message || 'Unknown error during upload'
+                msg: error.message || "Unknown error during upload",
               })
             );
           });
-
-
       });
     } catch (error) {
       return onHandleData({
@@ -279,15 +280,21 @@ class FolderLoader {
 
       for (let attempts = 0; attempts < retryCount; attempts++) {
         log(
-          `Processing address ${index + 1}/${addresses.length}, attempt ${attempts + 1
+          `Processing address ${index + 1}/${addresses.length}, attempt ${
+            attempts + 1
           }/${retryCount}`
         );
 
         try {
-          const uploadResult = await attemptUpload(addresses[index], blob, onProgress); // 尝试上传
-          log("uploadWithRetry", uploadResult)
+          const uploadResult = await attemptUpload(
+            addresses[index],
+            blob,
+            onProgress
+          ); // 尝试上传
+          log("uploadWithRetry", uploadResult);
 
-          if (uploadResult.code === 0 || uploadResult.code == -200) return uploadResult; // 成功上传/用户手动取消
+          if (uploadResult.code === 0 || uploadResult.code == -200)
+            return uploadResult; // 成功上传/用户手动取消
         } catch (error) {
           // 等待后重试
           await new Promise((resolve) =>

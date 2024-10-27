@@ -1,7 +1,6 @@
 import StatusCodes from "./codes";
 import { log, onHandleData } from "./errorHandler";
 
-
 export class Http {
   constructor(token, url, debug = false) {
     this.token = token;
@@ -36,7 +35,6 @@ export class Http {
     }
   }
 
-
   updateToken(newToken) {
     if (newToken && newToken.trim() !== "") {
       this.token = newToken;
@@ -48,13 +46,12 @@ export class Http {
 
   updateLanguage(language) {
     if (language && language.trim() !== "") {
-      localStorage.setItem("ttStorageLanguage", language)
+      localStorage.setItem("ttStorageLanguage", language);
       return onHandleData({ code: StatusCodes.SUCCESSFULLY });
     } else {
       return onHandleData({ code: StatusCodes.FAILURE });
     }
   }
-
 
   getData(endpoint) {
     const requestUrl = `${this.url}${endpoint}`;
@@ -148,7 +145,6 @@ export class Http {
 
         const { code, msg, data, ...otherFields } = res; // 解构出 code, msg 和 data
 
-
         return onHandleData({
           code: code,
           msg: msg ?? "",
@@ -213,16 +209,24 @@ export class Http {
       };
       // Handle errors
       xhr.onerror = () => {
-        const errorMessage = `File upload failed: ${xhr.statusText || "Handle network errors"
-          }`;
-        reject(onHandleData({ code: StatusCodes.FETCH_ERROR, msg: errorMessage }));
-
+        const errorMessage = `File upload failed: ${
+          xhr.statusText || "Handle network errors"
+        }`;
+        reject(
+          onHandleData({ code: StatusCodes.FETCH_ERROR, msg: errorMessage })
+        );
       };
 
       // Handle request abortion
       signal.addEventListener("abort", () => {
         xhr.abort();
-        reject(onHandleData({ code: -200, msg: "Handle request abortion", data: { abort: true } }));
+        reject(
+          onHandleData({
+            code: -200,
+            msg: "Handle request abortion",
+            data: { abort: true },
+          })
+        );
       });
 
       const formData = new FormData();
@@ -236,6 +240,4 @@ export class Http {
       xhr.send(formData);
     });
   }
-
-
 }

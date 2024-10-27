@@ -5,8 +5,8 @@ import HttpService from "./httpService";
 
 import UploadLoader from "./file/uploadLoader";
 import FolderLoader from "./file/folderLoader";
-import DownFolder from "./file/downfolder"
-import DownFile from "./file/downfile"
+import DownFolder from "./file/downfolder";
+import DownFile from "./file/downfile";
 
 import ShareLoader from "./shareLoader"; // 导入 ShareLoader
 
@@ -22,7 +22,7 @@ class CommService {
    */
   updateToken(newToken) {
     if (typeof newToken === "string" && newToken.trim().length > 0) {
-      this.Http.updateToken(newToken);
+      return this.Http.updateToken(newToken);
     } else {
       return onHandleData({
         code: StatusCodes.BAD_REQUEST,
@@ -359,7 +359,12 @@ class CommService {
     const validateAssetCid = Validator.validateAssetCid(assetCid);
     if (validateAssetCid) return validateAssetCid;
 
-    const res = await this.httpService.getFileDownURL({ assetCid, userId, areaId, hasTempFile });
+    const res = await this.httpService.getFileDownURL({
+      assetCid,
+      userId,
+      areaId,
+      hasTempFile,
+    });
 
     if (res.code === 0) {
       const urls = res.data.url;
@@ -388,7 +393,6 @@ class CommService {
           filesize,
           onProgress
         );
-
 
         return downresult;
       } else if (assetType == "file") {

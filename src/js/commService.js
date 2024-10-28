@@ -356,7 +356,17 @@ class CommService {
       fileSize,
     } = options;
 
+
+    console.log('sdk',"onFileDown")
+    console.log('sdk',"===========")
+    console.log('sdk...options.',options)
+
+
+
     const validateAssetCid = Validator.validateAssetCid(assetCid);
+    console.log('sdk...validateAssetCid.',validateAssetCid)
+
+
     if (validateAssetCid) return validateAssetCid;
 
     const res = await this.httpService.getFileDownURL({
@@ -365,6 +375,8 @@ class CommService {
       areaId,
       hasTempFile,
     });
+    console.log('sdk...downurl.',res)
+
 
     if (res.code === 0) {
       const urls = res.data.url;

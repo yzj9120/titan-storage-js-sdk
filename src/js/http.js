@@ -11,7 +11,11 @@ export class Http {
     // build
 
     if (!this.url) {
+      ///GET
+	
       this.url = "https://api-test1.container1.titannet.io";
+
+      // this.url="https://storage-test.titannet.io"
     }
     if (!token || token.trim() === "") {
       log(StatusCodes.API_KEY_EMPTY, "");

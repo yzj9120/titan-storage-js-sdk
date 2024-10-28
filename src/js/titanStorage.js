@@ -235,6 +235,7 @@ class TitanStorage {
     tempFileName: "",
     fileSize: 0
   }, onProgress) {
+    console.log('sdk',"downloadAsset")
     const data = await this.commService.onFileDown(
       options,
       onProgress

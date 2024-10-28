@@ -140,7 +140,7 @@
 		try {
 			// Initialize TitanSDK
 			TitanStorage.initialize({
-				token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAxNzczMDksImlkIjoidGl0YW4xamg0bnRmd3lsOXhxazllaGcycTdzNDR3OTlhZjkzOWpjZ3JkMmQiLCJvcmlnX2lhdCI6MTczMDA5MDkwOSwicm9sZSI6MH0.AY454znJbAOP4DNpZSH7UDgpsU7cDqDx8ned1h8ONRA",
+				token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAxOTAzMjMsImlkIjoiMHgzMGMxNmIxYzZlMDdiNWY2ODVlZTY2OGI5ZTY5YTI4NTEyZjc0MTU5Iiwib3JpZ19pYXQiOjE3MzAxMDM5MjMsInJvbGUiOjB9.XgQD2IQOub6WpOVegQU3-EdptifP8cyYtFROprNWJ3s",
 				debug: true,
 			});
 
@@ -394,7 +394,7 @@
 			const fileInput = document.getElementById('folderInput');
 			const files = fileInput.files;
 			const sdk = TitanStorage.getInstance();
-			const assetData = { areaId: [], groupId: 0, assetType: 1 };
+			const assetData = { areaId: ["China"], groupId: 0, assetType: 1 };
 			var res = await sdk.uploadAsset(files, assetData,
 				(loaded, total, percent) => {
 					console.log(`Progress: ${percent.toFixed(2)}% (${loaded}/${total})`);

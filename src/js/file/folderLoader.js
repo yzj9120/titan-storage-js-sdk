@@ -1,172 +1,336 @@
-import { onHandleData, log } from "../errorHandler";
-import Report from "../report";
+import { log, onHandleData } from "../errorHandler"; // 导入错误处理相关的模块
+import StatusCodes from "../codes"; // 导入状态码模块
+import Report from "../report"; // 导入报告模块
+import {
+  createFileEncoderStream,
+  CAREncoderStream,
+  createDirectoryEncoderStream,
+} from "ipfs-car";
 
-
-class DownFolder {
-    constructor(Http) {
-        this.concurrentLimit = 3;
-        this.progressCallback = null;
-        this.chunkQueue = [];
-        this.downloadedChunks = [];
-        this.maxRetries = 3;
-        this.failedChunks = [];
-        this.report = new Report(Http);
-        this.mimeType = "application/octet-stream";
-    }
-
-
-    async downloadFiles(url, fileName, controller, fileSize, updateProgress) {
-        return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-
-            xhr.open("GET", url, true);
-            xhr.responseType = "blob"; // 设置响应类型为 Blob
-
-            xhr.onprogress = function (event) {
-                let progress = (event.loaded / fileSize) * 100;
-
-                if (progress > 100) {
-                    progress = 100;
-                }
-
-                updateProgress(fileName, progress); // 反馈下载进度
-            };
-
-            xhr.onload = function () {
-                if (xhr.status === 200) {
-                    // 下载完成，处理下载
-                    const link = document.createElement("a");
-                    const blobUrl = window.URL.createObjectURL(xhr.response);
-                    link.href = blobUrl;
-                    link.download = fileName;
-                    document.body.appendChild(link);
-                    link.click();
-                    window.URL.revokeObjectURL(blobUrl);
-                    document.body.removeChild(link);
-                    resolve({ code: 0, msg: "Download successful" }); // 返回成功结果
-                } else {
-                    reject({ code: -1, msg: "Download failed" + xhr.statusText }); // 返回成功结果
-                }
-            };
-
-            xhr.onerror = function () {
-                //下载过程中出现错误。
-                reject({ code: -1, msg: "Download onerror" });
-            };
-
-            controller.signal.addEventListener("abort", () => {
-                xhr.abort(); // 取消下载
-                reject({ code: -1, msg: "Download abort" });
-            });
-
-            xhr.send(); // 发送请求
-        });
-    }
-
-
-    async downloadFromMultipleUrls(
-        urls,
-        traceId,
-        assetCid,
-        fileName,
-        fileSize,
+class FolderLoader {
+  constructor(httpService) {
+    this.httpService = httpService; // 接收 Http 实例
+    this.report = new Report(this.httpService); // 创建报告实例，用于记录上传结果
+    this.abortController = null; // 添加一个属性来管理 AbortController
+  }
+  async uploadFile(uploadUrl, token, file, signal, onProgress) {
+    try {
+      const response = await this.httpService.uploadFile(
+        uploadUrl,
+        token,
+        file,
+        signal,
         onProgress
-    ) {
-        const controller = new AbortController();
-        let successfulDownload = false; // 标记是否成功下载
-        const uploadResults = []; // 用于记录每个地址的上传结果
+      );
+      if (response.code !== 0) {
+        return onHandleData({
+          code: response.code,
+          msg: "Failed to upload file: " + response.msg,
+          data: response.data ?? {},
+        });
+      }
+      return response; // 返回上传成功的结果
+    } catch (error) {
+      return onHandleData({
+        code: error.code,
+        msg: "Failed to upload file: " + error.msg ?? "",
+        data: error.data ?? {},
+      });
+    }
+  }
 
-        const updateProgress = (fileName, progress) => {
-            if (!successfulDownload) {
-                if (onProgress) {
-                    onProgress(progress.toFixed(2)); // 反馈进度
-                }
-            }
+  async handleFolderUpload(file, options, onProgress, onWritableStream) {
+    const { areaId = [], groupId = 0, extraId = "", retryCount = 3 } = options;
+
+    const uploadResults = []; // 记录上传结果
+    const startTime = Date.now(); // 上传开始时间
+    let uploadSuccessful = false; // 上传是否成功的标记
+
+    try {
+      // 创建并处理文件夹切片
+      const streaRes = await this.createDirectoryStream(file, onWritableStream);
+
+      if (streaRes.code !== 0) {
+        return streaRes; // 如果创建流失败，直接返回错误
+      }
+
+      const folderName = file[0].webkitRelativePath.split("/")[0];
+      const assetData = {
+        asset_name: folderName,
+        asset_type: "folder",
+        asset_size: streaRes.data.blob.size,
+        group_id: groupId,
+        asset_cid: streaRes.data.rootCid,
+        extra_id: extraId,
+        need_trace: true,
+      };
+
+      const isTempUpload = groupId === -1; // 判断是否为临时上传
+
+      var assetData2 = {};
+      if (isTempUpload) {
+        assetData2 = {
+          ...assetData,
+          area_ids: areaId,
         };
-
-        // 递归处理每个 URL
-        const processUrl = async (index) => {
-            if (index >= urls.length) {
-                // 如果所有地址都已尝试，返回失败
-                return { code: -1, msg: "All url download failed" };
-            }
-
-            const startTime = Date.now(); // 记录下载开始时间
-            const url = urls[index];
-            const parsedUrl = new URL(url);
-            const nodeId = parsedUrl.hostname.split(".")[0];
-            let attempts = 0;
-
-            // 对当前 URL 进行最多 3 次重试
-            while (attempts < 3 && !successfulDownload) {
-                attempts++;
-                try {
-                    const result = await this.downloadFiles(
-                        url + "&format=tar",
-                        fileName + ".tar",
-                        controller,
-                        fileSize,
-                        updateProgress
-                    );
-                    // 成功下载，取消其他下载
-                    successfulDownload = true; // 标记下载成功
-                    controller.abort();
-
-                    const endTime = Date.now();
-                    const elapsedTime = endTime - startTime; // 计算耗时（毫秒）
-                    const transferRate = Math.floor((fileSize / elapsedTime) * 1000);
-
-                    // 记录下载结果
-                    uploadResults.push({
-                        status: 1, // 状态：成功
-                        msg: "successful",
-                        elapsedTime: elapsedTime, // 下载耗时
-                        transferRate: transferRate, // 传输速率
-                        size: fileSize, // 文件大小
-                        traceId: traceId,
-                        nodeId: nodeId, // 使用 URL 的主机名作为 nodeId
-                        cId: assetCid,
-                        log: "",
-                    });
-
-                    this.report.creatReportData(uploadResults, "download");
-
-                    return Promise.resolve(result); // 返回下载成功的结果
-                } catch (error) {
-                    // 记录失败并等待下一次重试
-                    if (attempts >= 3) {
-                        uploadResults.push({
-                            status: 2, // 状态：失败
-                            msg: "failed",
-                            elapsedTime: 0,
-                            transferRate: 0,
-                            size: fileSize,
-                            traceId: traceId,
-                            nodeId: nodeId,
-                            cId: assetCid,
-                            log: { [nodeId]: error.message },
-                        });
-
-                        this.report.creatReportData(uploadResults, "download");
-                    }
-                }
-            }
-
-            // 当前 URL 失败，尝试下一个 URL
-            return processUrl(index + 1);
+      } else {
+        assetData2 = {
+          ...assetData,
+          area_id: areaId,
         };
+      }
+      /// 获取下载地址：
+      const res = await this.httpService.postFileUpload({
+        isLoggedIn: !isTempUpload,
+        areaIds: areaId,
+        assetData: assetData2,
+      });
+      // 封装上传逻辑
+      const attemptUpload = async (address, blob, onProgress) => {
+        // const controller = new AbortController();
+        const parsedUrl = new URL(address.CandidateAddr);
+        const nodeId = parsedUrl.hostname.split(".")[0];
+        const startTime = Date.now(); // 上传开始时间
+        const uploadResult = await this.uploadFile(
+          address.CandidateAddr,
+          address.Token,
+          blob,
+          this.abortController.signal,
+          (loaded, total, percentComplete) => {
+            if (onProgress) onProgress(loaded, total, percentComplete);
+          }
+        );
 
-        const result = await processUrl(0); // 从第一个 URL 开始处理
+        const TraceID = address.TraceID ?? ""; // 获取 TraceID
+        const endTime = Date.now();
+        const elapsedTime = endTime - startTime; // 计算耗时
+        const transferRate = Math.floor((file.size / elapsedTime) * 1000); // 计算传输速率
 
-        // 返回最终结果
-
-        return successfulDownload ? result : onHandleData({
-            code: -1,
-            msg: "All url download failed " //如果所有地址下载都失败，返回错误信息
+        // 将结果记录到 uploadResults 数组
+        uploadResults.push({
+          status: uploadResult.code === 0 ? 1 : 2,
+          msg: uploadResult.msg,
+          elapsedTime: elapsedTime,
+          transferRate: transferRate,
+          size: blob.size,
+          traceId: TraceID,
+          nodeId: nodeId,
+          cId: uploadResult.cid ?? "",
+          log: uploadResult.code === 0 ? "" : { [nodeId]: uploadResult.msg },
+          ...uploadResult, // 保留原始上传结果
         });
 
+        // 记录上传结果
+        return uploadResult;
+      };
 
+      console.log(111, res.data);
+      // 处理返回结果 (文件已存在)
+      if (
+        (res.data.err && res.data.err === 1017) ||
+        (res.data.code == 0 && (res.data.List ?? []).length == 0)
+      ) {
+        return onHandleData({
+          code: 0,
+          data: {
+            cid: streaRes.data.rootCid,
+            isAlreadyExist: true,
+            url: res.data.assetDirectUrl,
+          },
+        });
+      }
+      // 失败返回
+      if (res.code !== 0) return res;
+
+      const uploadAddresses = res.data.List ?? [];
+
+      const uploadResult = await this.uploadWithRetry(
+        uploadAddresses,
+        attemptUpload,
+        retryCount,
+        streaRes.data.blob,
+        onProgress
+      );
+
+      this.report.creatReportData(uploadResults, "upload");
+      // 处理上传结果
+      if (uploadResult.code === 0) {
+        // 返回成功结果，保留 cId
+        return {
+          ...uploadResult,
+          cid: streaRes.data.rootCid,
+        };
+      } else {
+        return {
+          code: -1, // 上传文件错误状态码
+          msg: uploadResult.msg ?? "Upload addresses failed.", // 错误信息
+          data: uploadResult.data ?? {},
+        };
+      }
+    } catch (error) {
+      return onHandleData({ code: StatusCodes.FAILURE, msg: error });
     }
+  }
+
+  // 创建文件夹切片的函数
+  async createDirectoryStream(file, onWritableStream) {
+    this.abortController = new AbortController(); // 创建AbortController
+
+    try {
+      return new Promise((resolve, reject) => {
+        let myFile;
+        let rootCID;
+        // 监听取消信号
+        // this.abortController.signal.addEventListener('abort', () => {
+        //   reject(
+        //     onHandleData({
+        //       code: StatusCodes.UPLOAD_FILE_ERROR,
+        //       msg: 'Upload cancelled by user'
+        //     })
+        //   );
+        // });
+        createDirectoryEncoderStream(file)
+          .pipeThrough(
+            new TransformStream({
+              transform: (block, controller) => {
+                rootCID = block.cid;
+                controller.enqueue(block);
+              },
+            }),
+            { signal: this.abortController.signal } // 将信号传递到管道中
+          )
+          .pipeThrough(new CAREncoderStream(), {
+            signal: this.abortController.signal,
+          })
+          .pipeTo(
+            new WritableStream({
+              write(chunk) {
+                if (!myFile) {
+                  myFile = chunk;
+                } else {
+                  // 合并数据块
+                  if (!myFile || !chunk) {
+                    throw new Error("myFile or chunk is undefined");
+                  }
+                  let mergedArray = new Uint8Array(
+                    myFile.length + chunk.length
+                  );
+                  mergedArray.set(myFile);
+                  mergedArray.set(chunk, myFile.length);
+                  myFile = mergedArray;
+                }
+                if (onWritableStream) onWritableStream("writing");
+              },
+              close: () => {
+                if (onWritableStream) onWritableStream("close");
+                resolve(
+                  onHandleData({
+                    code: 0,
+                    data: {
+                      blob: new Blob([myFile]),
+                      rootCid: rootCID.toString(),
+                    },
+                  })
+                );
+              },
+              abort(error) {
+                if (onWritableStream) onWritableStream("abort");
+                reject(
+                  onHandleData({
+                    code: StatusCodes.UPLOAD_FILE_ERROR,
+                    msg: error || "Stream aborted",
+                  })
+                );
+              },
+            }),
+            { signal: this.abortController.signal } // 将信号传递到WritableStream中
+          )
+          .catch((error) => {
+            reject(
+              onHandleData({
+                code: StatusCodes.UPLOAD_FILE_ERROR,
+                msg: error.message || "Unknown error during upload",
+              })
+            );
+          });
+      });
+    } catch (error) {
+      return onHandleData({
+        code: error.code,
+        msg: "Failed to upload file: " + error.msg ?? "",
+      });
+    }
+  }
+
+  async uploadWithRetry(
+    addresses,
+    attemptUpload,
+    retryCount,
+    blob,
+    onProgress
+  ) {
+    // 递归函数：逐个处理地址
+    const processAddress = async (index) => {
+      if (index >= addresses.length) {
+        return {
+          code: StatusCodes.UPLOAD_FILE_ERROR,
+          msg: "All upload addresses failed.",
+        };
+      }
+
+      for (let attempts = 0; attempts < retryCount; attempts++) {
+        log(
+          `Processing address ${index + 1}/${addresses.length}, attempt ${
+            attempts + 1
+          }/${retryCount}`
+        );
+
+        try {
+          const uploadResult = await attemptUpload(
+            addresses[index],
+            blob,
+            onProgress
+          ); // 尝试上传
+          log("uploadWithRetry", uploadResult);
+
+          if (uploadResult.code === 0 || uploadResult.code == -200)
+            return uploadResult; // 成功上传/用户手动取消
+        } catch (error) {
+          // 等待后重试
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * Math.pow(2, attempts))
+          );
+        }
+      }
+      // 递归处理下一个地址
+      return processAddress(index + 1);
+    };
+
+    return processAddress(0);
+  }
+
+  // 延迟重试
+  delayRetry(attempts) {
+    return new Promise((resolve) =>
+      setTimeout(resolve, 1000 * Math.pow(2, attempts))
+    );
+  }
+
+  // 处理上传错误
+  handleUploadError() {
+    return {
+      code: StatusCodes.UPLOAD_FILE_ERROR,
+      msg: "Upload addresses failed.",
+    };
+  }
+
+  // 取消上传的方法
+  cancelUpload() {
+    if (this.abortController) {
+      this.abortController.abort("Upload cancelled by user"); // 添加了明确的取消原因
+      this.abortController = null; // 清空 controller
+    }
+  }
 }
 
-export default DownFolder;
+export default FolderLoader;

@@ -281,11 +281,16 @@ class UploadLoader {
       });
     }
 
-    // 处理返回结果
-    if (res2.data.err && res2.data.err === 1017) {
+    if (
+      (res2.data.err && res2.data.err === 1017) ||
+      (res2.code == 0 && (res2.data.List ?? []).length == 0) ||
+      (res2.code == 0 && (res2.data ?? []).length == 0)
+    ) {
+      // 处理返回结果
       return onHandleData({
         code: 0,
         data: {
+          isFastUpload: true,
           cid: uploadResult.cid,
           isAlreadyExist: true,
           url: res2.data.assetDirectUrl,

@@ -137,17 +137,31 @@
 <script>
 	document.addEventListener('DOMContentLoaded', function () {
 
+		var list = [{
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAyMTI0NTYsImlkIjoidG9udGRyaXZlL3dqczA2MTUiLCJvcmlnX2lhdCI6MTczMDEyNjA1Niwicm9sZSI6MH0.WVSdbrZD32EeFUejIr5o7ayni4cevKineNbaO4ahZss",
+			cid: "bafybeiewzxopyhrogetdvnr2jx4pkgurhicl4gqie5n3q6ykhl3oowhmgu"
+		},
+		{
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAxOTk1NDIsImlkIjoidG9udGRyaXZlL3pneDAxIiwib3JpZ19pYXQiOjE3MzAxMTMxNDIsInJvbGUiOjB9.vI-HJCdkU0faTzO3MjDmE30lvG2lDGxlSoWh9yJAEVc",
+			cid: "bafkreigbreupjba4d4houvkcot2vm3ss6ancck6euzy57sx3labo5kxtpq"
+		},
+
+		{
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAyMTYyNDAsImlkIjoidGl0YW4xM2N1djU1N3F6emZoajd2N2R2aGNqNGR0ZHV1MDN0bXlxY3Q2OWUiLCJvcmlnX2lhdCI6MTczMDEyOTg0MCwicm9sZSI6MH0.u4Hk5Wd4idAwrpr9UdiwqfPZ-YAPCxFRrmL0QipZZo4",
+			cid: "bafkreihffgyy4pqzlzhxikek27ep7eup624ypuyz6ba6xnzgtfmgfqsuua"
+		},
+
+		]
+
+
+		const bean = list[1];
+
 		try {
 			// Initialize TitanSDK
 			TitanStorage.initialize({
-				token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAxMjU3ODgsImlkIjoidG9udGRyaXZlL3dqczA2MTUiLCJvcmlnX2lhdCI6MTczMDAzOTM4OCwicm9sZSI6MH0.H89h1MeKRuEGd1cmUQhsHUI8RqBct3Gq41TPEmXVl8w",
+				token: bean.token,
 				debug: true,
 			});
-
-
-
-			//	TitanStorage.getInstance().	updateLanguage("aaaaa")
-
 
 		} catch (error) {
 			console.error('Error initializing TitanStorage:', error);
@@ -336,7 +350,7 @@
 			const options = {
 				areaId: "",
 				userId: "",
-				assetCid: "bafybeiewzxopyhrogetdvnr2jx4pkgurhicl4gqie5n3q6ykhl3oowhmgu",
+				assetCid: bean.cid,
 				assetType: "file", //file,folder 
 				// hasTempFile: true,
 				// tempFileName: "组 569033@2x.png",

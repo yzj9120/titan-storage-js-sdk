@@ -124,16 +124,17 @@ class FolderLoader {
         return uploadResult;
       };
 
-      console.log(111, res);
+      //log(111, res);
       // 处理返回结果 (文件已存在)
       if (
-        (res.data.err && res.data.err === 1017) ||  
+        (res.data.err && res.data.err === 1017) ||
         (res.code == 0 && (res.data.List ?? []).length == 0) ||
         (res.code == 0 && (res.data ?? []).length == 0)
       ) {
         return onHandleData({
           code: 0,
           data: {
+            isFastUpload: true,
             cid: streaRes.data.rootCid,
             isAlreadyExist: true,
             url: res.data.assetDirectUrl,

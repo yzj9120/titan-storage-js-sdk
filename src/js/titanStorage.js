@@ -31,8 +31,7 @@ class TitanStorage {
       log(successStatus);
       return successStatus;
     } catch (error) {
-      return onHandleData({ code: StatusCodes.InitSdk_ERROR }
-      );
+      return onHandleData({ code: StatusCodes.InitSdk_ERROR });
     }
   }
 
@@ -61,8 +60,6 @@ class TitanStorage {
     const data = this.commService.updateLanguage(language);
     return data;
   }
-
-
 
   /**
    * Get the area IDs
@@ -178,7 +175,7 @@ class TitanStorage {
    * @param {string} options.shortPass - The access password is not mandatory. When it is not empty (a password consisting of 6 digits and letters), it needs to be verified whether it is valid
    * @param {string} options.hasDay - Whether it is a day, default no, supports timestamp when false, supports days when true
    * @param {string} options.hasDomain -Whether to carry the domain name by default. If it is false, the domain name needs to be concatenated
-  * @returns {Promise<Object>} Share result
+   * @returns {Promise<Object>} Share result
    */
 
   async createSharedLink(
@@ -187,7 +184,7 @@ class TitanStorage {
       expireAt: null,
       shortPass: "",
       hasDay: false,
-      hasDomain: true
+      hasDomain: true,
     }
   ) {
     const data = await this.commService.onShare(options);
@@ -226,20 +223,19 @@ class TitanStorage {
    * @param {Function} onProgress - Progress callback
    * @returns {Promise<Object>} Download result
    */
-  async downloadAsset(options = {
-    areaId: "",
-    assetCid: "",
-    assetType: "",
-    userId: "",
-    hasTempFile: false,
-    tempFileName: "",
-    fileSize: 0
-  }, onProgress) {
-    console.log('sdk',"downloadAsset")
-    const data = await this.commService.onFileDown(
-      options,
-      onProgress
-    );
+  async downloadAsset(
+    options = {
+      areaId: "",
+      assetCid: "",
+      assetType: "",
+      userId: "",
+      hasTempFile: false,
+      tempFileName: "",
+      fileSize: 0,
+    },
+    onProgress
+  ) {
+    const data = await this.commService.onFileDown(options, onProgress);
     return data;
   }
 }

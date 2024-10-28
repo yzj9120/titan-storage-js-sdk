@@ -36,21 +36,22 @@ const result = TitanStorage.initialize({
 
 | Method                            | Description                                    |
 |-----------------------------------|------------------------------------------------|
- <a href="../demo/titan-initialize.html">TitanStorage.initialize</a> | Initialize the SDK                             |
-| <a href="../demo/titan-listregions.html">TitanStorage.listRegions</a> | Retrieve the list of area IDs from the scheduler |
-| [TitanStorage.initialize](#../demo/titan-initialize.html)  | Initialize the SDK                             |
-| TitanStorage.listRegions           | Retrieve the list of area IDs from the scheduler |
-| TitanStorage.createFolder          | Create directories, including root and subdirectories |
-| TitanStorage.listDirectoryContents    | Retrieve a list of all folders and files      |
-| TitanStorage.renameFolder          | Rename a specific folder                       |
-| TitanStorage.renameAsset          | Rename a specific file                         |
-| TitanStorage.deleteFolder          | Delete a specific folder                       |
-| TitanStorage.deleteAsset          | Delete a specific file                         |
-| TitanStorage.getUserProfile             | Retrieve user-related information              |
-| TitanStorage.getltemDetails    | Get detailed information about files/folders   |
-| TitanStorage.createSharedLink                | Share file/folder data                         |
-| TitanStorage.uploadAsset           | Upload files/folders                           |
-| TitanStorage.downloadAsset         | Download files/folders                         |
+<a href="../main/demo/titan-initialize.html">TitanStorage.initialize</a> | Initialize the SDK                             |
+| <a href="../mian/demo/titan-listregions.html">TitanStorage.listRegions</a> | Retrieve the list of area IDs from the scheduler |
+| <a href="../mian/demo/titan-createFolder.html">TitanStorage.createFolder</a> | Create directories, including root and subdirectories|
+| <a href="../mian/demo/titan-listDirectoryContents.html">TitanStorage.listDirectoryContents</a> | Retrieve a list of all folders and files |
+| <a href="../mian/demo/titan-renameFolder.html">TitanStorage.renameFolder</a> | Rename a specific folder    |
+| <a href="../mian/demo/titan-renameAsset.html">TitanStorage.renameAsset</a> | Rename a specific file    |
+| <a href="../mian/demo/titan-deleteFolder.html">TitanStorage.deleteFolder</a> | Delete a specific folder       |
+| <a href="../mian/demo/titan-deleteAsset.html">TitanStorage.deleteAsset</a> | Delete a specific file       |
+| <a href="../mian/demo/titan-getUserProfile.html">TitanStorage.getUserProfile</a> | Retrieve user-related information        |
+| <a href="../mian/demo/titan-getltemDetails.html">TitanStorage.getltemDetails</a> | Get detailed information about files/folders        |
+| <a href="../mian/demo/titan-createSharedLink.html">TitanStorage.createSharedLink</a> | Share file/folder data         |
+| <a href="../mian/demo/titan-uploadAsset.html">TitanStorage.uploadAsset</a> | Upload files/folders               |
+| <a href="../mian/demo/titan-downloadAsset.html">TitanStorage.downloadAsset</a> | Download files/folders               |
+
+
+
 
 ### Error Codes
 Below are the potential errors that the SDK may throw. Please refer to the table for handling suggestions.

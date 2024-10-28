@@ -36,7 +36,7 @@ const result = TitanStorage.initialize({
 
 | Method                            | Description                                    |
 |-----------------------------------|------------------------------------------------|
-| TitanStorage.initialize              | Initialize the SDK                             |
+| [TitanStorage.initialize](#../demo/titan-initialize.html)  | Initialize the SDK                             |
 | TitanStorage.listRegions           | Retrieve the list of area IDs from the scheduler |
 | TitanStorage.createFolder          | Create directories, including root and subdirectories |
 | TitanStorage.listDirectoryContents    | Retrieve a list of all folders and files      |

@@ -126,21 +126,47 @@ class FolderLoader {
 
       //log(111, res);
       // 处理返回结果 (文件已存在)
-      if (
-        (res.data.err && res.data.err === 1017) ||
-        (res.code == 0 && (res.data.List ?? []).length == 0) ||
-        (res.code == 0 && (res.data ?? []).length == 0)
-      ) {
+
+      //相同用户上传同个文件会返回1017（逻辑为文件已存在，不能继续上传）
+      if (res.data.err && res.data.err === 1017) {
         return onHandleData({
           code: 0,
           data: {
-            isFastUpload: true,
             cid: streaRes.data.rootCid,
             isAlreadyExist: true,
             url: res.data.assetDirectUrl,
           },
         });
       }
+      // 当返回为空数组（那是不同用户上传相同文件，要显示上传成功 但是不是真实上传）
+      else if ((res.code == 0 && (res.data.List ?? []).length == 0) ||
+        (res.code == 0 && (res.data ?? []).length == 0)) {
+        return onHandleData({
+          code: 0,
+          data: {
+            isFastUpload: true,
+            cid: streaRes.data.rootCid,
+            url: res.data.assetDirectUrl,
+          },
+        });
+      }
+
+
+      // if (
+      //   (res.data.err && res.data.err === 1017) ||
+      //   (res.code == 0 && (res.data.List ?? []).length == 0) ||
+      //   (res.code == 0 && (res.data ?? []).length == 0)
+      // ) {
+      //   return onHandleData({
+      //     code: 0,
+      //     data: {
+      //       isFastUpload: true,
+      //       cid: streaRes.data.rootCid,
+      //       isAlreadyExist: true,
+      //       url: res.data.assetDirectUrl,
+      //     },
+      //   });
+      // }
       // 失败返回
       if (res.code !== 0) return res;
 
@@ -282,8 +308,7 @@ class FolderLoader {
 
       for (let attempts = 0; attempts < retryCount; attempts++) {
         log(
-          `Processing address ${index + 1}/${addresses.length}, attempt ${
-            attempts + 1
+          `Processing address ${index + 1}/${addresses.length}, attempt ${attempts + 1
           }/${retryCount}`
         );
 

@@ -281,22 +281,31 @@ class UploadLoader {
       });
     }
 
-    if (
-      (res2.data.err && res2.data.err === 1017) ||
-      (res2.code == 0 && (res2.data.List ?? []).length == 0) ||
-      (res2.code == 0 && (res2.data ?? []).length == 0)
-    ) {
-      // 处理返回结果
+
+    //相同用户上传同个文件会返回1017（逻辑为文件已存在，不能继续上传）
+    if (res2.data.err && res2.data.err === 1017) {
       return onHandleData({
         code: 0,
         data: {
-          isFastUpload: true,
           cid: uploadResult.cid,
           isAlreadyExist: true,
           url: res2.data.assetDirectUrl,
         },
       });
-    } else {
+    }
+    // 当返回为空数组（那是不同用户上传相同文件，要显示上传成功 但是不是真实上传）
+    else if ((res2.code == 0 && (res2.data.List ?? []).length == 0) ||
+      (res2.code == 0 && (res2.data ?? []).length == 0)) {
+      return onHandleData({
+        code: 0,
+        data: {
+          isFastUpload: true,
+          cid: uploadResult.cid,
+          url: res2.data.assetDirectUrl,
+        },
+      });
+    }
+    else {
       return onHandleData({
         code: res2.code,
         data: {

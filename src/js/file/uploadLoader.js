@@ -82,7 +82,7 @@ class UploadLoader {
         assetData: md5,
       });
 
-      //console.log(111, res);
+      console.log(111, res);
 
       // 获取地址失败 直接反馈给用户
       if (res.code != 0) return res;
@@ -296,6 +296,15 @@ class UploadLoader {
     // 当返回为空数组（那是不同用户上传相同文件，要显示上传成功 但是不是真实上传）
     else if ((res2.code == 0 && (res2.data.List ?? []).length == 0) ||
       (res2.code == 0 && (res2.data ?? []).length == 0)) {
+
+        const res = await this.httpService.getFileDownURL({
+          assetCid:uploadResult.cid,
+           userId:"", 
+           areaId:null, 
+           hasTempFile :false
+        });
+        console.log("sdk...downurl.", res);
+
       return onHandleData({
         code: 0,
         data: {

@@ -296,21 +296,22 @@ class UploadLoader {
     // 当返回为空数组（那是不同用户上传相同文件，要显示上传成功 但是不是真实上传）
     else if ((res2.code == 0 && (res2.data.List ?? []).length == 0) ||
       (res2.code == 0 && (res2.data ?? []).length == 0)) {
-
-        const res = await this.httpService.getFileDownURL({
-          assetCid:uploadResult.cid,
-           userId:"", 
-           areaId:null, 
-           hasTempFile :false
-        });
-        console.log("sdk...downurl.", res);
-
+      const { data } = await this.httpService.getFileDownURL({
+        assetCid: uploadResult.cid,
+        userId: "",
+        areaId: null,
+        hasTempFile: false
+      });
+      let cleanUrl = ""
+      if (data?.url?.length > 0) {
+        cleanUrl = data.url[0].split('&filename')[0];
+      }
       return onHandleData({
         code: 0,
         data: {
           isFastUpload: true,
           cid: uploadResult.cid,
-          url: res2.data.assetDirectUrl,
+          url: cleanUrl,
         },
       });
     }

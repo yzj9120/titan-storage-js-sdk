@@ -141,12 +141,23 @@ class FolderLoader {
       // 当返回为空数组（那是不同用户上传相同文件，要显示上传成功 但是不是真实上传）
       else if ((res.code == 0 && (res.data.List ?? []).length == 0) ||
         (res.code == 0 && (res.data ?? []).length == 0)) {
+
+        const { data } = await this.httpService.getFileDownURL({
+          assetCid: uploadResult.cid,
+          userId: "",
+          areaId: null,
+          hasTempFile: false
+        });
+        let cleanUrl = ""
+        if (data?.url?.length > 0) {
+          cleanUrl = data.url[0].split('&filename')[0];
+        }
         return onHandleData({
           code: 0,
           data: {
             isFastUpload: true,
             cid: streaRes.data.rootCid,
-            url: res.data.assetDirectUrl,
+            url: cleanUrl,
           },
         });
       }

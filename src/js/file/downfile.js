@@ -158,6 +158,28 @@ class DownFile {
     });
   }
 
+  async checkMultipleUrlsAvailability(urls) {
+    const availableUrls = [];
+    // 创建一个数组，存储所有的检查 Promise
+    const availabilityPromises = urls.map(async (url) => {
+      const isAvailable = await this.checkUrlAvailability(url);
+      return isAvailable ? url : null; // 返回可用的 URL 或 null
+    });
+
+    // 使用 Promise.all 等待所有 Promise 完成
+    const results = await Promise.all(availabilityPromises);
+
+    // 过滤出可用的 URL
+    for (const result of results) {
+      if (result) {
+        availableUrls.push(result);
+      }
+    }
+
+    return availableUrls; // 返回可用的 URL 列表
+  }
+
+
   // 检查 URL 的可用性
   async checkUrlAvailability(url) {
     try {
@@ -281,16 +303,18 @@ class DownFile {
     scheduler.initializeChunks(fileSize);
 
     // 检查每个 URL 的可用性
-    const availableUrls = [];
+    const availableUrls =  await this.checkMultipleUrlsAvailability(urls);
+
+    // const availableUrls = [];
     const uploadResults = [];
-    for (const url of urls) {
-      const isAvailable = await this.checkUrlAvailability(url);
-      if (isAvailable) {
-        availableUrls.push(url); // 仅将可用的 URL 添加到列表中
-      }
-    }
-    log("urs:"+urls.length)
-    log("availableUrls:"+availableUrls.length)
+    // for (const url of urls) {
+    //   const isAvailable = await this.checkUrlAvailability(url);
+    //   if (isAvailable) {
+    //     availableUrls.push(url); // 仅将可用的 URL 添加到列表中
+    //   }
+    // }
+    log("urs:" + urls.length)
+    log("availableUrls:" + availableUrls.length)
 
     if (availableUrls.length === 0) {
       return onHandleData({

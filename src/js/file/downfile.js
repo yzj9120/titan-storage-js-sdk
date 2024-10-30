@@ -160,14 +160,20 @@ class DownFile {
 
   // 检查 URL 的可用性
   async checkUrlAvailability(url) {
-    // return true;
     try {
-      const response = await fetch(url, { method: "HEAD" });
-      return response.ok;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Range: "bytes=0-1"
+        }
+      });
+      // 检查响应状态码是否在 200 到 206 范围内
+      return response.ok && (response.status >= 200 && response.status <= 206);
     } catch (error) {
       return false;
     }
   }
+
   // 根据 URL 的成功率获取最佳下载地址
   getBestUrl() {
     let bestUrl = null;
@@ -283,6 +289,8 @@ class DownFile {
         availableUrls.push(url); // 仅将可用的 URL 添加到列表中
       }
     }
+    log("urs:"+urls.length)
+    log("availableUrls:"+availableUrls.length)
 
     if (availableUrls.length === 0) {
       return onHandleData({

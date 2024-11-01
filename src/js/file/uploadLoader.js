@@ -304,8 +304,11 @@ class UploadLoader {
       });
       let cleanUrl = ""
       if (data?.url?.length > 0) {
-        cleanUrl = data.url[0].split('&filename')[0];
+        cleanUrl = data.url[0];
       }
+      // if (data?.url?.length > 0) {
+      //   cleanUrl = data.url[0].split('&filename')[0];
+      // }
       return onHandleData({
         code: 0,
         data: {
@@ -316,10 +319,21 @@ class UploadLoader {
       });
     }
     else {
+      const { data } = await this.httpService.getFileDownURL({
+        assetCid: uploadResult.cid,
+        userId: "",
+        areaId: null,
+        hasTempFile: false
+      });
+      let cleanUrl = ""
+      if (data?.url?.length > 0) {
+        cleanUrl = data.url[0];
+      }
       return onHandleData({
         code: res2.code,
         data: {
           cid: uploadResult.cid,
+          url: cleanUrl,
         },
         msg: "Upload success",
       });

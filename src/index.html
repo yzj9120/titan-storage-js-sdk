@@ -137,14 +137,14 @@
 	document.addEventListener('DOMContentLoaded', function () {
 
 
-		
+
 		var list = [{
 			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAyMTI0NTYsImlkIjoidG9udGRyaXZlL3dqczA2MTUiLCJvcmlnX2lhdCI6MTczMDEyNjA1Niwicm9sZSI6MH0.WVSdbrZD32EeFUejIr5o7ayni4cevKineNbaO4ahZss",
 			cid: "bafybeiewzxopyhrogetdvnr2jx4pkgurhicl4gqie5n3q6ykhl3oowhmgu"
 		},
 		{
-			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAzNTcyMDQsImlkIjoidGl0YW4xamg0bnRmd3lsOXhxazllaGcycTdzNDR3OTlhZjkzOWpjZ3JkMmQiLCJvcmlnX2lhdCI6MTczMDI3MDgwNCwicm9sZSI6MH0.wybYd6gaK7J8XPZ5Qx57KIB7pCPWrX8thwKhFDBC6WM",
-			cid: "bafkreie2lwxuirogkkitorgw7a57s2votyiy6deb7kh24bftcw57l26lia"
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzA0NDM3NzcsImlkIjoidGl0YW4xamg0bnRmd3lsOXhxazllaGcycTdzNDR3OTlhZjkzOWpjZ3JkMmQiLCJvcmlnX2lhdCI6MTczMDM1NzM3Nywicm9sZSI6MH0.oyFxoPJtKs35nI5oJn9gYSH6jjpgJMDitbm8tYYLowM",
+			cid: "bafkreigbreupjba4d4houvkcot2vm3ss6ancck6euzy57sx3labo5kxtpq"
 		},
 
 		{
@@ -352,11 +352,11 @@
 			const options = {
 				areaId: "",
 				userId: "",
-				assetCid: bean.cid,
+				assetCid:"bafkreiajmybrp3zvzvbjfbfg7e4p2nh7a25ese2dgwt2zz5wk2mbl6frxq",
 				assetType: "file", //file,folder 
 				// hasTempFile: true,
-				// tempFileName: "组 569033@2x.png",
-				// fileSize: 24420,
+				// tempFileName: "ip-route.txt",
+				// fileSize: 251,
 			}
 			TitanStorage.getInstance().downloadAsset(options, (progress) => {
 				console.log(`下载进度: ${progress}%`);
@@ -428,9 +428,9 @@
 
 	});
 
-	
 
-	
+
+
 
 	// // 计算总大小的递归函数
 	// async function getTotalSize(files) {

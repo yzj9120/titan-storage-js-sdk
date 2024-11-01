@@ -343,6 +343,7 @@ class CommService {
       hasTempFile: false,
       tempFileName: "",
       fileSize: 0,
+      isOpen: false
     },
     onProgress
   ) {
@@ -353,7 +354,7 @@ class CommService {
       areaId,
       hasTempFile,
       tempFileName,
-      fileSize,
+      fileSize, isOpen
     } = options;
 
     const validateAssetCid = Validator.validateAssetCid(assetCid);
@@ -366,7 +367,7 @@ class CommService {
       areaId,
       hasTempFile,
     });
-    log("sdk...downurl：" , res);
+    log("sdk...downurl：", res);
 
     if (res.code === 0) {
       const urls = res.data.url;
@@ -409,7 +410,8 @@ class CommService {
           traceId,
           assetCid,
           fileName,
-          filesize
+          filesize,
+          isOpen
         );
         return downresult;
       } else {

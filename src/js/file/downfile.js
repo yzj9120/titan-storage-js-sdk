@@ -138,7 +138,7 @@ class DownloadScheduler {
 
 class DownFile {
   constructor(Http) {
-    this.maxConcurrentDownloads = 20; // 最大并发数，限制同时下载的任务数量
+    this.maxConcurrentDownloads = 10; // 最大并发数，限制同时下载的任务数量
     this.maxRetries = 3; // 每个分片的最大重试次数
     this.report = new Report(Http); // 用于记录下载进度等信息
     this.lock = new SimpleLock(); // 简单锁，用于控制任务的顺序和并发
@@ -193,7 +193,7 @@ class DownFile {
   }
 
   // 检查 URL 的可用性
-  async checkUrlAvailability(url, timeout = 800) {
+  async checkUrlAvailability(url, timeout = 1000) {
     try {
       const response = await Promise.race([
         fetch(url, {
@@ -231,7 +231,7 @@ class DownFile {
   // 下载任务，下载单个分片并进行标记，同时更新进度
   async downloadTask(url, chunk, scheduler) {
     try {
-      //log(`Start downloading chunk: ${chunk.start}-${chunk.end} from ${url}`); // 输出开始下载的日志
+      log(`Start downloading chunk: ${chunk.start}-${chunk.end} from ${url}`); // 输出开始下载的日志
       const { blob, size } = await this.downloadChunk(url, chunk.start, chunk.end); // 下载分片
       ///大小为0：标识失败了
       if (!blob || size == 0) {
@@ -249,12 +249,15 @@ class DownFile {
           const progress = scheduler.getProgress();
           this.progressCallback(progress);
         }
+        return { success: true, chunk }; // 返回成功的结果
       }
     } catch (error) {
       //const msg = `Failed to chunk ${chunk.start}-${chunk.end} from ${scheduler.getNodeId(url)} ${error}`;
-      log(`downloadTask:Failed chunk: ${error}`);
+      log(`downloadTask:Failed chunk22: ${error}`);
       scheduler.markChunkFailed(chunk, url, error); // 标记分片失败
       this.urlStats[url].failure++; // 记录失败下载
+      return { success: false, chunk, error }; // 返回失败的结果
+
     }
   }
 
@@ -290,24 +293,25 @@ class DownFile {
       // if (retries < this.maxRetries) {
       //   return this.downloadChunk(url, start, end, retries + 1); // 尝试重试
       // }
-      const hasSuccess = Object.values(this.urlStats).some(stat => stat.success > 0);
+       const hasSuccess = Object.values(this.urlStats).some(stat => stat.success > 0);
       const errorMessage = hasSuccess ?
         `downloadChunk:Failed to download range ${start}-${end} .` :
         `downloadChunk:Failed: ${start}-${end}: ${error.message}`;
 
-      if (hasSuccess) {
-        log("There are entries with success greater than 0.");
-        throw new Error(errorMessage);
-      } else {
-        log('No entries with success greater than 0.');
-        return { blob: null, size: 0, error: errorMessage }; // 返回错误信息到上一级
-      }
+      // if (hasSuccess) {
+      //   log("There are entries with success greater than 0.");
+      //   throw new Error(errorMessage);
+      // } else {
+      //   log('No entries with success greater than 0.');
+      //   return { blob: null, size: 0, error: errorMessage }; // 返回错误信息到上一级
+      // }
+      return { blob: null, size: 0, error: errorMessage }; // 返回错误信息到上一级
     }
   }
 
 
   // 主下载方法，下载文件并进行分片处理
-  async downloadFile(urls, traceId, assetCid, fileName, fileSize) {
+  async downloadFile(urls, traceId, assetCid, fileName, fileSize,isOpen) {
     this.initializeUrlStats(urls); // 初始化 URL 统计
     const chunkSize = Math.min(1024 * 1024, Math.ceil(fileSize / (urls.length * 5)));
     const scheduler = new DownloadScheduler(urls, chunkSize);
@@ -342,7 +346,8 @@ class DownFile {
       }
       // 等待当前批次的所有下载任务完成
       try {
-        await Promise.all(downloadTasks);
+        var res= await Promise.all(downloadTasks);
+        log("downloadTasks:",{res});
       } catch (error) {
         // 捕获错误并记录失败的分片
         log("Some download tasks failed.");
@@ -449,22 +454,19 @@ class DownFile {
     });
 
     this.report.creatReportData(uploadResults, "download");
-
     if (!allCompleted) {
       return onHandleData({
         code: -1,
         msg: "Failed to download chunk",
       });
     } else {
-      this.saveFile(finalBlob, fileName); // Save the downloaded file
+      this.saveFile(finalBlob, fileName,isOpen); // Save the downloaded file
       return onHandleData({
         code: 0,
         msg: "File downloaded successfully",
       });
     }
-
   }
-
   //合并所有下载成功的分片
   mergeChunks(chunks, mimeType) {
     console.log("chunks=", chunks);
@@ -477,7 +479,7 @@ class DownFile {
   }
 
   // 保存下载的文件
-  saveFile(blob, fileName) {
+  saveFile(blob, fileName,isOpen) {
     const url = URL.createObjectURL(blob); // 创建 URL 对象
     const a = document.createElement("a"); // 创建下载链接
     a.href = url; // 设置链接地址
@@ -485,6 +487,10 @@ class DownFile {
     document.body.appendChild(a); // 将链接添加到文档
     a.click(); // 触发下载
     document.body.removeChild(a); // 下载后移除链接
+    // 打开文件
+    if(isOpen){
+      window.open(url); // 在新窗口中打开文件
+    }
     URL.revokeObjectURL(url); // 释放 URL 对象
   }
 }

@@ -129,29 +129,20 @@ class FolderLoader {
 
       //相同用户上传同个文件会返回1017（逻辑为文件已存在，不能继续上传）
       if (res.data.err && res.data.err === 1017) {
+        let cleanUrl = await this.getDownurl(streaRes.data.rootCid)
         return onHandleData({
           code: 0,
           data: {
             cid: streaRes.data.rootCid,
             isAlreadyExist: true,
-            url: res.data.assetDirectUrl,
+            url: cleanUrl,
           },
         });
       }
       // 当返回为空数组（那是不同用户上传相同文件，要显示上传成功 但是不是真实上传）
       else if ((res.code == 0 && (res.data.List ?? []).length == 0) ||
         (res.code == 0 && (res.data ?? []).length == 0)) {
-
-        const { data } = await this.httpService.getFileDownURL({
-          assetCid: uploadResult.cid,
-          userId: "",
-          areaId: null,
-          hasTempFile: false
-        });
-        let cleanUrl = ""
-        if (data?.url?.length > 0) {
-          cleanUrl = data.url[0].split('&filename')[0];
-        }
+        let cleanUrl = await this.getDownurl(uploadResult.cid)
         return onHandleData({
           code: 0,
           data: {
@@ -194,10 +185,12 @@ class FolderLoader {
       this.report.creatReportData(uploadResults, "upload");
       // 处理上传结果
       if (uploadResult.code === 0) {
+        let cleanUrl = await this.getDownurl(streaRes.data.rootCid)
         // 返回成功结果，保留 cId
         return {
           ...uploadResult,
           cid: streaRes.data.rootCid,
+          url: cleanUrl,
         };
       } else {
         return {
@@ -368,6 +361,19 @@ class FolderLoader {
       this.abortController.abort("Upload cancelled by user"); // 添加了明确的取消原因
       this.abortController = null; // 清空 controller
     }
+  }
+  async getDownurl(assetCid,) {
+    const { data } = await this.httpService.getFileDownURL({
+      assetCid: assetCid,
+      userId: "",
+      areaId: null,
+      hasTempFile: false
+    });
+    let cleanUrl = ""
+    if (data?.url?.length > 0) {
+      cleanUrl = data.url[0];
+    }
+    return cleanUrl;
   }
 }
 

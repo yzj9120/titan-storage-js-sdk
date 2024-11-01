@@ -232,6 +232,7 @@ class TitanStorage {
       hasTempFile: false,
       tempFileName: "",
       fileSize: 0,
+      isOpen: false
     },
     onProgress
   ) {

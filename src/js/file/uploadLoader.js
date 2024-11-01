@@ -82,7 +82,7 @@ class UploadLoader {
         assetData: md5,
       });
 
-      console.log(111, res);
+      //console.log(111, res);
 
       // 获取地址失败 直接反馈给用户
       if (res.code != 0) return res;
@@ -281,34 +281,22 @@ class UploadLoader {
       });
     }
 
-
     //相同用户上传同个文件会返回1017（逻辑为文件已存在，不能继续上传）
     if (res2.data.err && res2.data.err === 1017) {
+      let cleanUrl = await this.getDownurl(uploadResult.cid)
       return onHandleData({
         code: 0,
         data: {
           cid: uploadResult.cid,
           isAlreadyExist: true,
-          url: res2.data.assetDirectUrl,
+          url: cleanUrl,
         },
       });
     }
     // 当返回为空数组（那是不同用户上传相同文件，要显示上传成功 但是不是真实上传）
     else if ((res2.code == 0 && (res2.data.List ?? []).length == 0) ||
       (res2.code == 0 && (res2.data ?? []).length == 0)) {
-      const { data } = await this.httpService.getFileDownURL({
-        assetCid: uploadResult.cid,
-        userId: "",
-        areaId: null,
-        hasTempFile: false
-      });
-      let cleanUrl = ""
-      if (data?.url?.length > 0) {
-        cleanUrl = data.url[0];
-      }
-      // if (data?.url?.length > 0) {
-      //   cleanUrl = data.url[0].split('&filename')[0];
-      // }
+      let cleanUrl = await this.getDownurl(uploadResult.cid)
       return onHandleData({
         code: 0,
         data: {
@@ -319,16 +307,7 @@ class UploadLoader {
       });
     }
     else {
-      const { data } = await this.httpService.getFileDownURL({
-        assetCid: uploadResult.cid,
-        userId: "",
-        areaId: null,
-        hasTempFile: false
-      });
-      let cleanUrl = ""
-      if (data?.url?.length > 0) {
-        cleanUrl = data.url[0];
-      }
+      let cleanUrl = await this.getDownurl(uploadResult.cid)
       return onHandleData({
         code: res2.code,
         data: {
@@ -346,6 +325,22 @@ class UploadLoader {
       this.abortController.abort(); // 触发取消
       this.abortController = null; // 清空 controller
     }
+  }
+
+  /// 获取下载地址 返回给td 
+
+  async getDownurl(assetCid,) {
+    const { data } = await this.httpService.getFileDownURL({
+      assetCid: assetCid,
+      userId: "",
+      areaId: null,
+      hasTempFile: false
+    });
+    let cleanUrl = ""
+    if (data?.url?.length > 0) {
+      cleanUrl = data.url[0];
+    }
+    return cleanUrl;
   }
 }
 

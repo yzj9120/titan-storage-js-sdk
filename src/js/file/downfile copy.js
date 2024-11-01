@@ -42,6 +42,16 @@ class DownloadScheduler {
   }
 
   // 初始化分片任务，根据文件大小分配分片
+  //   initializeChunks(fileSize) {
+  //     this.totalSize = fileSize; // 记录文件的总大小
+  //     const totalChunks = Math.ceil(fileSize / this.chunkSize); // 计算总分片数量
+  //     for (let i = 0; i < totalChunks; i++) {
+  //       const start = i * this.chunkSize;
+  //       const end = Math.min(fileSize - 1, (i + 1) * this.chunkSize - 1); // 分片范围
+  //       this.chunkQueue.push({ start, end }); // 将分片任务加入队列
+  //     }
+  //     log(`totalChunks: ${totalChunks}`); // 输出总分片数量
+  //   }
   initializeChunks(fileSize) {
     this.totalSize = fileSize; // 记录文件的总大小
     const totalChunks = Math.ceil(fileSize / this.chunkSize);
@@ -50,11 +60,6 @@ class DownloadScheduler {
       const end = Math.min(fileSize - 1, (i + 1) * this.chunkSize - 1);
       this.chunkQueue.push({ start, end, size: end - start + 1 }); // 加入 size 属性
     }
-    // console.log("initializeChunks;", this.chunkQueue.length)
-    // this.chunkQueue.forEach((chunk, index) => {
-    //   console.log(`Chunk ${index}:`, chunk);
-    //   // 在这里对每个 chunk 进行处理
-    // });
   }
 
   // 更新已下载的大小
@@ -75,32 +80,14 @@ class DownloadScheduler {
   // 标记分片下载失败，将其存入失败队列
   markChunkFailed(chunk, url, error) {
     const nodeId = this.getNodeId(url);
-    // 检查是否已经存在相同的失败分片
-    const chunkExists = this.failedChunks.some(
-      (existingChunk) =>
-        existingChunk.start === chunk.start && existingChunk.end === chunk.end
-    );
-    // 如果不存在，则添加到失败分片列表
-    if (!chunkExists) {
-      chunk.retries = 0;
-      this.failedChunks.push(chunk);
-    }
+    this.failedChunks.push(chunk);
     this.urlStatus[nodeId].code = 2; // 设置为失败状态
     this.urlStatus[nodeId].msg = `${error}`; // 更新失败消息
   }
-
   // 标记分片下载成功，将其存入成功队列
   markChunkCompleted(chunk, url) {
     const nodeId = this.getNodeId(url);
-    // 检查是否已经存在相同的成功分片
-    const chunkExists = this.completedChunks.some(
-      (existingChunk) =>
-        existingChunk.start === chunk.start && existingChunk.end === chunk.end
-    );
-    // 如果不存在，则添加到成功分片列表
-    if (!chunkExists) {
-      this.completedChunks.push(chunk);
-    }
+    this.completedChunks.push(chunk);
     this.urlStatus[nodeId].code = 1; // 设置为成功状态
     this.urlStatus[nodeId].msg = `completed`; // 更新成功消息
   }
@@ -112,13 +99,8 @@ class DownloadScheduler {
 
   // 检查是否所有分片已下载完成
   allChunksCompleted() {
-    console.log(
-      "【allChunksCompleted：】",
-      this.completedChunks.length,
-      Math.ceil(this.totalSize / this.chunkSize)
-    );
     return (
-      this.completedChunks.length >= Math.ceil(this.totalSize / this.chunkSize)
+      this.completedChunks.length === Math.ceil(this.totalSize / this.chunkSize)
     );
   }
   // 获取每个 URL 的状态
@@ -138,8 +120,8 @@ class DownloadScheduler {
 
 class DownFile {
   constructor(Http) {
-    this.maxConcurrentDownloads = 20; // 最大并发数，限制同时下载的任务数量
-    this.maxRetries = 3; // 每个分片的最大重试次数
+    this.maxConcurrentDownloads = 10; // 最大并发数，限制同时下载的任务数量
+    this.maxRetries = 1; // 每个分片的最大重试次数
     this.report = new Report(Http); // 用于记录下载进度等信息
     this.lock = new SimpleLock(); // 简单锁，用于控制任务的顺序和并发
     this.progressCallback = null; // 进度回调函数
@@ -158,8 +140,10 @@ class DownFile {
     const load = this.calculateSystemLoad();
     if (load > 80 && this.maxConcurrentDownloads > 1) {
       this.maxConcurrentDownloads -= 1; // 减少并发下载数
+      //console.log(`降低并发下载数量: ${this.maxConcurrentDownloads}`);
     } else if (load < 50 && this.maxConcurrentDownloads < 20) {
       this.maxConcurrentDownloads += 1; // 增加并发下载数
+      //console.log(`增加并发下载数量: ${this.maxConcurrentDownloads}`);
     }
   }
 
@@ -173,43 +157,41 @@ class DownFile {
       this.urlStats[url] = { success: 0, failure: 0 };
     });
   }
-  // 返回可用的 URL
+
   async checkMultipleUrlsAvailability(urls) {
     const availableUrls = [];
+    // 创建一个数组，存储所有的检查 Promise
     const availabilityPromises = urls.map(async (url) => {
       const isAvailable = await this.checkUrlAvailability(url);
-      return isAvailable ? url : null;
+      return isAvailable ? url : null; // 返回可用的 URL 或 null
     });
 
     // 使用 Promise.all 等待所有 Promise 完成
     const results = await Promise.all(availabilityPromises);
+
     // 过滤出可用的 URL
     for (const result of results) {
       if (result) {
         availableUrls.push(result);
       }
     }
+
     return availableUrls; // 返回可用的 URL 列表
   }
 
+
   // 检查 URL 的可用性
-  async checkUrlAvailability(url, timeout = 800) {
+  async checkUrlAvailability(url) {
     try {
-      const response = await Promise.race([
-        fetch(url, {
-          method: "GET",
-          headers: {
-            Range: "bytes=0-10",
-          },
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout")), timeout)
-        ),
-      ]);
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Range: "bytes=0-1"
+        }
+      });
       // 检查响应状态码是否在 200 到 206 范围内
-      return response.ok && response.status >= 200 && response.status <= 206;
+      return response.ok && (response.status >= 200 && response.status <= 206);
     } catch (error) {
-      log("Error checking URL availability:" + error);
       return false;
     }
   }
@@ -218,41 +200,49 @@ class DownFile {
   getBestUrl() {
     let bestUrl = null;
     let bestSuccessRate = -1;
+
     for (const [url, { success, failure }] of Object.entries(this.urlStats)) {
       const total = success + failure;
       const successRate = total === 0 ? 0 : success / total;
+
       if (successRate > bestSuccessRate) {
         bestSuccessRate = successRate;
         bestUrl = url;
       }
     }
-    return bestUrl;
+    return bestUrl; // 返回成功率最高的 URL
   }
   // 下载任务，下载单个分片并进行标记，同时更新进度
   async downloadTask(url, chunk, scheduler) {
     try {
-      //log(`Start downloading chunk: ${chunk.start}-${chunk.end} from ${url}`); // 输出开始下载的日志
-      const { blob, size } = await this.downloadChunk(url, chunk.start, chunk.end); // 下载分片
-      ///大小为0：标识失败了
-      if (!blob || size == 0) {
+      log(`Start downloading chunk: ${chunk.start}-${chunk.end} from ${url}`); // 输出开始下载的日志
+      const { blob, size } = await this.downloadChunk(
+        url,
+        chunk.start,
+        chunk.end
+      ); // 下载分片
+      if (!blob) {
         this.urlStats[url].failure++; // 记录失败下载
-        const msg = `Failed to download chunk ${chunk.start}-${chunk.end} from ${scheduler.getNodeId(url)}: Blob is missing or the downloaded size is 0.`;
-        //scheduler.markChunkFailed(chunk, url, err); // 标记分片失败 (catch 会获取到，此处不需要)
-        throw new Error(msg);
-      } else {
-        scheduler.markChunkCompleted({ start: chunk.start, blob }, url); // 标记分片成功
-        scheduler.updateDownloadedSize(size); // 更新已下载的大小
-        log(`downloadTask:${chunk.start}-${chunk.end}, size: ${size} ->successfully`); // 输出下载成功的日志
-        this.urlStats[url].success++; // 记录成功下载
-        // 计算下载进度并通过回调函数通知
-        if (this.progressCallback) {
-          const progress = scheduler.getProgress();
-          this.progressCallback(progress);
-        }
+        const err = `Chunk ${chunk.start}-${chunk.end} failed to download.`;
+        //scheduler.markChunkFailed(chunk, url, err); // 标记分片失败
+        throw new Error(err);
+      }
+      scheduler.markChunkCompleted({ start: chunk.start, blob }, url); // 标记分片成功
+      scheduler.updateDownloadedSize(size); // 更新已下载的大小
+      log(
+        `Chunk downloaded successfully: ${chunk.start}-${chunk.end}, size: ${size}`
+      ); // 输出下载成功的日志
+      this.urlStats[url].success++; // 记录成功下载
+      // 计算下载进度并通过回调函数通知
+      if (this.progressCallback) {
+        const progress = scheduler.getProgress();
+        this.progressCallback(progress);
       }
     } catch (error) {
-      //const msg = `Failed to chunk ${chunk.start}-${chunk.end} from ${scheduler.getNodeId(url)} ${error}`;
-      log(`downloadTask:Failed chunk: ${error}`);
+      log(
+        `Failed to downloadTask chunk: ${chunk.start}-${chunk.end} from ${url}`,
+        error
+      ); // 输出下载失败的日志
       scheduler.markChunkFailed(chunk, url, error); // 标记分片失败
       this.urlStats[url].failure++; // 记录失败下载
     }
@@ -260,78 +250,90 @@ class DownFile {
 
   // 下载单个分片，如果失败则重试，最多重试 maxRetries 次
   async downloadChunk(url, start, end, retries = 0) {
-    const timeoutDuration = 5000; // 设置超时时间
-    const timeoutPromise = () =>
-      new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error(`Timeout: Failed to download range ${start}-${end} in ${timeoutDuration} ms`)),
-          timeoutDuration
-        )
-      );
-
     try {
-      const response = await Promise.race([
-        fetch(url, { headers: { Range: `bytes=${start}-${end}` } }),
-        timeoutPromise(),
-      ]);
-
+      log(`Requesting to download chunk: ${start}-${end} from ${url}`); // 输出请求分片的日志
+      const response = await fetch(url, {
+        headers: {
+          Range: `bytes=${start}-${end}`, // 使用 Range 请求分片
+        },
+      });
+      // 如果请求失败，抛出错误进行捕获
       if (!response.ok) {
-        throw new Error(`downloadChunk:Failed to  range ${start}-${end}, status: ${response.status}`);
+        throw new Error(`Failed to download range ${start}-${end}`);
       }
 
       const blob = await response.blob();
-      log(`blob: ${start}-${end} - ${blob.size}`);
       this.mimeType = response.headers.get("Content-Type");
-      return { blob, size: blob.size };
-
+      return { blob, size: end - start + 1 }; // 返回文件的 Blob 和大小
     } catch (error) {
-      log(`downloadChunk:Failed: ${start}-${end}`);
-      ///重试放最后执行
+      log(`Failed to download chunk: ${start}-${end}, retry`); // 输出错误日志
       // if (retries < this.maxRetries) {
-      //   return this.downloadChunk(url, start, end, retries + 1); // 尝试重试
+      //     log(
+      //         `Retrying to download chunk: ${start}-${end} from ${url}, retry times: ${retries + 1
+      //         }`
+      //     ); // 输出重试的日志
+      //     await new Promise((resolve) => setTimeout(resolve, 1000)); // 延迟 1 秒后重试
+      //     return this.downloadChunk(url, start, end, retries + 1); // 重试下载
       // }
-      const hasSuccess = Object.values(this.urlStats).some(stat => stat.success > 0);
-      const errorMessage = hasSuccess ?
-        `downloadChunk:Failed to download range ${start}-${end} .` :
-        `downloadChunk:Failed: ${start}-${end}: ${error.message}`;
-
+      const hasSuccess = Object.values(this.urlStats).some(
+        (stat) => stat.success > 0
+      );
       if (hasSuccess) {
-        log("There are entries with success greater than 0.");
-        throw new Error(errorMessage);
+        console.log("存在 success 大于 0 的条目");
+        throw new Error(`Failed to download range ${start}-${end}`);
       } else {
-        log('No entries with success greater than 0.');
-        return { blob: null, size: 0, error: errorMessage }; // 返回错误信息到上一级
+        //console.log('不存在 success 大于 0 的条目');
+        return {
+          blob: null,
+          size: 0,
+          error: `Failed: ${start}-${end}: ${error.message}`,
+        }; // 返回错误信息到上一级
       }
     }
   }
 
-
   // 主下载方法，下载文件并进行分片处理
   async downloadFile(urls, traceId, assetCid, fileName, fileSize) {
     this.initializeUrlStats(urls); // 初始化 URL 统计
-    const chunkSize = Math.min(1024 * 1024, Math.ceil(fileSize / (urls.length * 5)));
+    const chunkSize = Math.min(
+      1024 * 1024,
+      Math.ceil(fileSize / (urls.length * 5))
+    );
     const scheduler = new DownloadScheduler(urls, chunkSize);
     scheduler.initializeChunks(fileSize);
-    // // 检查每个 URL 的可用性
+
+    // 检查每个 URL 的可用性
     const availableUrls = await this.checkMultipleUrlsAvailability(urls);
+
+    // const availableUrls = [];
     const uploadResults = [];
-    log("init:" + chunkSize + "..." + urls.length + "..." + availableUrls.length);
+    // for (const url of urls) {
+    //   const isAvailable = await this.checkUrlAvailability(url);
+    //   if (isAvailable) {
+    //     availableUrls.push(url); // 仅将可用的 URL 添加到列表中
+    //   }
+    // }
+    log("urs:" + urls.length)
+    log("availableUrls:" + availableUrls.length)
+
     if (availableUrls.length === 0) {
-      return onHandleData({ code: -1, msg: "URL downloaded error ", });
+      return onHandleData({
+        code: -1,
+        msg: "URL downloaded error ",
+      });
     }
 
     let allCompleted = false;
+
     // 进行并行下载
     const downloadTasks = []; // 存储当前的下载任务
     const activeUrls = availableUrls.slice(); // 使用可用的 URL 列表
     const startTime = Date.now();
     this.adjustConcurrency();
-    let retries = 0;
+    const retries = 0;
     // 循环直到所有分片都成功下载
-    // 获取可以并行下载的分片
-    while (scheduler.chunkQueue.length > 0) {
-      const downloadTasks = [];
-      // 启动并发的下载任务，直到达到 maxConcurrentDownloads 或没有分片
+    while (!allCompleted) {
+      // 获取可以并行下载的分片
       while (
         scheduler.chunkQueue.length > 0 &&
         downloadTasks.length < this.maxConcurrentDownloads
@@ -340,85 +342,54 @@ class DownFile {
         const url = activeUrls[Math.floor(Math.random() * activeUrls.length)]; // 随机选择一个 URL
         downloadTasks.push(this.downloadTask(url, chunk, scheduler)); // 启动下载任务
       }
-      // 等待当前批次的所有下载任务完成
+      // 等待所有当前的下载任务完成
       try {
-        await Promise.all(downloadTasks);
+        var res = await Promise.all(downloadTasks);
       } catch (error) {
-        // 捕获错误并记录失败的分片
-        log("Some download tasks failed.");
-        scheduler.failedChunks.push(...scheduler.chunkQueue); // 记录失败的分片
+        // 如果 Promise.all 抛出错误，说明所有下载任务失败
+        log("All download tasks failed. Exiting.");
+        scheduler.failedChunks = [];
+        break;
       }
-    }
+      console.log(100, scheduler.hasFailedChunks());
 
-    log("down:", scheduler.hasFailedChunks() + ":" + scheduler.allChunksCompleted() + "-" + scheduler.failedChunks.length);
-
-    while (scheduler.hasFailedChunks()) {
-      log("failedChunks:", scheduler.failedChunks);
-      for (const failedChunk of [...scheduler.failedChunks]) {
-        // 获取最优URL用于重试
-        const urlToRetry = this.getBestUrl();
-        if (!urlToRetry) {
-          return onHandleData({
-            code: -1,
-            msg: `All available URLs failed to download ${failedChunk.start}-${failedChunk.end} cannot be retried`,
-          });
-        }
-        // 初始化重试次数
-        if (!failedChunk.retries) {
-          failedChunk.retries = 0;
-        }
-        log("retries:" + failedChunk.retries);
-        // 检查重试次数是否超过限制 最大可用地址的次数
-        if (failedChunk.retries >= availableUrls.length) {
-          const msg = `Max retries reached for chunk ${failedChunk.start}-${failedChunk.end}`
-          scheduler.markChunkFailed(failedChunk, urlToRetry, msg); // 标记分片失败的msg
-          continue; // 跳过已超过最大重试次数的分片
-        }
-        try {
-          const { blob } = await this.downloadChunk(urlToRetry, failedChunk.start, failedChunk.end);
-          log(`Retry:`, { failedChunk, blob, urlToRetry });
-
-          if (blob && blob.size > 0) {
-            // 成功下载后从失败列表中移除分片
-            scheduler.failedChunks = scheduler.failedChunks.filter(
-              (chunk) => chunk.start !== failedChunk.start
+      // 检查是否有失败的分片
+      if (scheduler.hasFailedChunks() && retries < this.maxRetries) {
+        retries++;
+        for (const failedChunk of scheduler.failedChunks) {
+          // 选择最佳的 URL 重新下载失败的分片
+          const urlToRetry = this.getBestUrl();
+          if (!urlToRetry) {
+            // 如果没有可用的 URL，记录错误并返回
+            return onHandleData({
+              code: -1,
+              msg: `All available URLs failed to download ${failedChunk.start}-${failedChunk.end}  cannot be retried`,
+            });
+          }
+          try {
+            const { blob } = await this.downloadChunk(
+              urlToRetry,
+              failedChunk.start,
+              failedChunk.end
             );
-            this.urlStats[urlToRetry].success++; // 记录失败下载
-
-            log("Retry:failedChunks:", scheduler.failedChunks);
             scheduler.markChunkCompleted(
               { start: failedChunk.start, blob },
               urlToRetry
             );
-          } else {
-            failedChunk.retries++;
-            this.urlStats[urlToRetry].failure++; // 记录失败下载
+          } catch (error) {
             log(
-              `Retry:failedChunks failed:`, scheduler.failedChunks
+              `Failed to re-download chunk ${failedChunk.start}-${failedChunk.end}`,
+              error
             );
+            break;
           }
-        } catch (error) {
-          // 增加重试次数
-          failedChunk.retries++;
-          log(
-            `Failed to re-download chunk ${failedChunk.start}-${failedChunk.end}-${error}`
-          );
         }
+        scheduler.failedChunks = []; // 清空失败分片队列
       }
-      // 如果所有分片都已重试到最大次数，则退出
-      if (
-        scheduler.failedChunks.every(
-          (chunk) => chunk.retries >= availableUrls.length
-        )
-      ) {
-        log("All failed chunks have reached max retries.");
-        break;
-      }
+      // 检查是否所有分片已成功下载
+      allCompleted = scheduler.allChunksCompleted();
+      downloadTasks.length = 0; // 清空当前任务列表
     }
-    // 检查是否所有分片已成功下载
-    allCompleted = scheduler.allChunksCompleted();
-    downloadTasks.length = 0; // 清空当前任务列表
-
     const endTime = Date.now();
     const elapsedTime = endTime - startTime;
     const transferRate = Math.floor((fileSize / elapsedTime) * 1000);
@@ -427,47 +398,52 @@ class DownFile {
       scheduler.completedChunks,
       this.mimeType
     );
-    console.log("size:", finalBlob.size + "----" + fileSize);
-
-    const statusCode = allCompleted ? 1 : 2;
-    const statusMsg = allCompleted ? "successful" : "failed";
-    const elapsedTimeValue = allCompleted ? elapsedTime : 0;
-    const transferRateValue = allCompleted ? transferRate : 0;
-
-    scheduler.getUrlStatus().forEach((item) => {
-      uploadResults.push({
-        status: statusCode,
-        msg: statusMsg,
-        elapsedTime: elapsedTimeValue,
-        transferRate: transferRateValue,
-        size: fileSize,
-        traceId: traceId,
-        nodeId: item.nodeId,
-        cId: assetCid,
-        log: allCompleted ? "" : { [item.nodeId]: item.msg },
-      });
-    });
-
-    this.report.creatReportData(uploadResults, "download");
+    ///finalBlob.size !== fileSize
 
     if (!allCompleted) {
+      scheduler.getUrlStatus().forEach((item) => {
+        uploadResults.push({
+          status: 2,
+          msg: "failed",
+          elapsedTime: 0,
+          transferRate: 0,
+          size: fileSize,
+          traceId: traceId,
+          nodeId: item.nodeId,
+          cId: assetCid,
+          log: { [item.nodeId]: item.msg },
+        });
+      });
+      this.report.creatReportData(uploadResults, "download");
       return onHandleData({
         code: -1,
-        msg: "Failed to download chunk",
+        msg: `Failed to download chunk`,
       });
     } else {
-      this.saveFile(finalBlob, fileName); // Save the downloaded file
+      scheduler.getUrlStatus().forEach((item) => {
+        uploadResults.push({
+          status: 1,
+          msg: "successful",
+          elapsedTime: elapsedTime,
+          transferRate: transferRate,
+          size: fileSize,
+          traceId: traceId,
+          nodeId: item.nodeId,
+          cId: assetCid,
+          log: "",
+        });
+      });
+      this.saveFile(finalBlob, fileName); // 保存下载文件
+      this.report.creatReportData(uploadResults, "download");
       return onHandleData({
         code: 0,
-        msg: "File downloaded successfully",
+        msg: "File downloaded successfully ",
       });
     }
-
   }
 
   //合并所有下载成功的分片
   mergeChunks(chunks, mimeType) {
-    console.log("chunks=", chunks);
     const sortedChunks = chunks.sort((a, b) => a.start - b.start);
     const mergedBlob = new Blob(
       sortedChunks.map((chunk) => chunk.blob),

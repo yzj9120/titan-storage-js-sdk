@@ -366,7 +366,7 @@ class CommService {
       areaId,
       hasTempFile,
     });
-    console.log("sdk...downurl.", res);
+    log("sdk...downurl：" , res);
 
     if (res.code === 0) {
       const urls = res.data.url;
@@ -405,8 +405,7 @@ class CommService {
           }
         });
         // 开始下载文件
-        var downresult = await downloader.downloadFile(
-          urls,
+        var downresult = await downloader.downloadFile(urls,
           traceId,
           assetCid,
           fileName,

@@ -320,6 +320,9 @@ class DownFile {
 
   // 主下载方法，下载文件并进行分片处理
   async downloadFile(urls, traceId, assetCid, fileName, fileSize, isOpen) {
+    if (!urls || urls.length == 0) {
+      return onHandleData({ code: -1, msg: "Download URL does not exist" });
+    }
     this.initializeUrlStats(urls); // 初始化 URL 统计
     const chunkSize = Math.min(
       10 * 1024 * 1024,
@@ -334,7 +337,7 @@ class DownFile {
       "init:" + chunkSize + "..." + urls.length + "..." + availableUrls.length
     );
     if (availableUrls.length === 0) {
-      return onHandleData({ code: -1, msg: "URL downloaded error " });
+      return onHandleData({ code: -1, msg: "No available download nodes" });
     }
 
     let allCompleted = false;

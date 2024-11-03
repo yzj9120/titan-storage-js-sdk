@@ -69,7 +69,16 @@ const commonConfig = {
     maxAssetSize: 1500000,
     maxEntrypointSize: 1500000,
   },
-  
+};
+
+// 为开发环境配置 devServer
+const devConfig = {
+  devServer: {
+    contentBase: path.join(__dirname, "dist"), // 指定静态文件目录
+    compress: true, // 启用 gzip 压缩
+    port: 9000, // 指定端口
+    hot: false, // 启用 HMR
+  },
 };
 
 const umdConfig = {

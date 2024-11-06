@@ -1,0 +1,481 @@
+<!doctype html>
+<html class="default no-js">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Titan Storage 1.0.0 </title>
+	<meta name="description" content="Documentation for NERTC V5.6.30">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="../src/assets/css/main.css">
+</head>
+
+<body>
+
+	<div class="container container-main">
+		<div class="row">
+			<div class="col-12 col-content">
+				<div class="tsd-panel tsd-typography">
+					<a href="#nertc-web-sdk" id="nertc-web-sdk" style="color: inherit; text-decoration: none;">
+						<h1><span id="NERtc Web SDK">Titan Storage Web SDK</span></h1>
+					</a>
+
+					<table>
+						<thead>
+							<tr>
+								<th>方法</th>
+								<th>功能描述</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td><a href="../demo/titan-init.html">initialize</a></td>
+								<td>初始化Sdk</td>
+							</tr>
+							<tr>
+								<td><button id="listRegions">listRegions</button></td>
+								<td>获取调度器的area id 列表</td>
+							</tr>
+							<tr>
+								<td><button id="createFolder">createFolder</button></td>
+								<td>创建目录，包括创建根目录和子目录的文件夹</td>
+							</tr>
+
+							<tr>
+								<td><button id="listDirectoryContents">listDirectoryContents</button></td>
+								<td>获取列表所以的文件夹和文件列表</td>
+							</tr>
+
+							<tr>
+								<td><button id="renameFolder">renameFolder</button></td>
+
+								<td>修改某一个文件夹名称</td>
+							</tr>
+
+
+							<tr>
+								<td><button id="renameAsset">renameAsset</button></td>
+
+								<td>修改某一个文件名称</td>
+							</tr>
+
+							<tr>
+
+								<td><button id="deleteFolder">deleteFolder</button></td>
+
+								<td>删除某一个文件夹名称</td>
+							</tr>
+
+							<tr>
+
+								<td><button id="deleteAsset">deleteAsset</button></td>
+								<td>删除某一个文件</td>
+							</tr>
+
+							<tr>
+								<td><button id="getUserProfile">getUserProfile</button></td>
+
+								<td>获取用户相关信息</td>
+							</tr>
+
+							<tr></tr>
+							<td><button id="getltemDetails">getltemDetails</button></td>
+
+							<td>获取文件/文件夹详细</td>
+							</tr>
+
+							<tr>
+								<td><button id="createSharedLink">createSharedLink</button></td>
+								<td>文件/文件夹数据分享</td>
+							</tr>
+
+							<tr>
+								<td><button id="uploadAsset">uploadAsset</button></td>
+								<td>
+
+									<div>
+										<!-- File upload -->
+										<label for="fileInput">选择文件上传:</label>
+										<input type="file" id="fileInput" />
+										<button id="uploadFileButton">文件上传。</button>
+
+										<br /><br />
+
+										<!-- Folder upload -->
+										<label for="folderInput">选择文件夹上传:</label>
+										<input type="file" id="folderInput" webkitdirectory multiple />
+										<button id="uploadFolderButton">文件夹上传</button>
+									</div>
+								</td>
+							</tr>
+
+
+
+							<tr>
+								<td><button id="downloadAsset">downloadAsset</button></td>
+								<td>文件/文件夹下载</td>
+							</tr>
+
+						</tbody>
+					</table>
+
+
+				</div>
+			</div>
+
+			<button type="button" id="cancelButton">Cancel Upload</button>
+
+		</div>
+	</div>
+
+
+</body>
+<script src="./js/titanStorage.js"></script>
+<script src="./js/spark-md5.js"></script>
+
+<script>
+	document.addEventListener('DOMContentLoaded', function () {
+
+
+
+		var list = [{
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAyMTI0NTYsImlkIjoidG9udGRyaXZlL3dqczA2MTUiLCJvcmlnX2lhdCI6MTczMDEyNjA1Niwicm9sZSI6MH0.WVSdbrZD32EeFUejIr5o7ayni4cevKineNbaO4ahZss",
+			cid: "bafybeiewzxopyhrogetdvnr2jx4pkgurhicl4gqie5n3q6ykhl3oowhmgu"
+		},
+		{
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6bnVsbCwiSUQiOiIiLCJOb2RlSUQiOiIiLCJFeHRlbmQiOiJ7XCJVc2VySURcIjpcInRvbnRkcml2ZS93anMwNjE1XCIsXCJBc3NldENJRFwiOlwiYmFmeWJlaWJ5emtvaXBmcG00Zm5rNnR1ZjVsNmx5bXNwYnpicnF0cDNra2dvb2d3ZmFkYmNremJ4NnFcIixcIkFzc2V0U2l6ZVwiOjAsXCJFeHBpcmF0aW9uXCI6XCIwMDAxLTAxLTAxVDAwOjAwOjAwWlwiLFwiVHJhY2VJRFwiOlwiXCJ9IiwiQWNjZXNzQ29udHJvbExpc3QiOm51bGwsIkZpbGVQYXNzTm9uY2UiOiIiLCJUcmFjZUlEIjoiIn0.AJMFnJMWD72eIPk-BWY5gPI-dBmOpSLnlh7u8y6ytHI",
+			cid: "bafkreiayybik5qqofazdf25lsgbiargudo3nfmp2vc7forc4mfdb7fo2sa"
+		},
+
+		{
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzAyMTYyNDAsImlkIjoidGl0YW4xM2N1djU1N3F6emZoajd2N2R2aGNqNGR0ZHV1MDN0bXlxY3Q2OWUiLCJvcmlnX2lhdCI6MTczMDEyOTg0MCwicm9sZSI6MH0.u4Hk5Wd4idAwrpr9UdiwqfPZ-YAPCxFRrmL0QipZZo4",
+			cid: "bafkreihffgyy4pqzlzhxikek27ep7eup624ypuyz6ba6xnzgtfmgfqsuua"
+		},
+
+		]
+
+
+		const bean = list[1];
+
+		try {
+			// Initialize TitanSDK
+			TitanStorage.initialize({
+				token: bean.token,
+				// url: "https://api-test1.container1.titannet.io",
+				debug: true,
+			});
+
+		} catch (error) {
+			console.error('Error initializing TitanStorage:', error);
+		}
+
+		document.getElementById('listRegions').addEventListener('click', async () => {
+			/// listRegions
+			TitanStorage.getInstance().listRegions()
+				.then(res => {
+					console.log('listRegions:', res);
+
+				})
+				.catch(error => {
+					console.error('error:', error);
+				});
+		});
+
+		document.getElementById('createFolder').addEventListener('click', async () => {
+			/// createFolder 
+			TitanStorage.getInstance().createFolder({
+				name: "folder",
+				parent: 0
+			}).then(res => {
+				console.log('createFolder:', res);
+
+			}).catch(error => {
+				console.error('Error creating folder:', error);
+			});
+		});
+
+		document.getElementById('deleteFolder').addEventListener('click', async () => {
+			const sdk = TitanStorage.getInstance();
+			sdk.listDirectoryContents({
+				page: 1,
+				parent: 0,
+				pageSize: 10000
+			})
+				.then(res => {
+					console.log('listDirectoryContents:', res);
+					res.data.list.forEach(item => {
+						if (item.Group) {
+
+
+							sdk.deleteFolder({ groupId: item.Group.ID })
+								.then(data => {
+									console.log('Group deleted successfully:', data);
+								})
+								.catch(error => {
+									console.error('Error deleting group:', error);
+								});
+						}
+					});
+
+				})
+				.catch(error => {
+					console.error('listDirectoryContents folder:', error);
+				});
+
+		});
+
+
+		document.getElementById('deleteAsset').addEventListener('click', async () => {
+			const sdk = TitanStorage.getInstance();
+			sdk.listDirectoryContents({
+				page: 1,
+				parent: 0,
+				pageSize: 10000
+			})
+				.then(res => {
+					console.log('listDirectoryContents:', res);
+					res.data.list.forEach(item => {
+						if (item.AssetOverview) {
+
+
+							sdk.deleteAsset({ assetId: item.AssetOverview.AssetRecord.CID })
+								.then(data => {
+									console.log('Group deleted successfully:', data);
+								})
+								.catch(error => {
+									console.error('Error deleting group:', error);
+								});
+						}
+					});
+
+				})
+				.catch(error => {
+					console.error('listDirectoryContents folder:', error);
+				});
+
+		});
+
+
+		document.getElementById('createSharedLink').addEventListener('click', async () => {
+			//createSharedLink
+			var sdk = TitanStorage.getInstance();
+			sdk.createFolder({
+				name: "folder",
+				parent: 0
+			}).then(res => {
+				console.log('Folder created successfully:', res);
+				var id = res.data.group.ID;
+				sdk.createSharedLink({
+					id: id,
+					expireAt: 1892520661,
+					shortPass: "qq0000",
+					// hasDay: false,///是否支持使用天
+					// hasDomain: false
+				}).then(res => {
+					console.log('createSharedLink:', res);
+				});
+
+			}).catch(error => {
+				console.error('Error creating folder:', error);
+			});
+		});
+		document.getElementById('listDirectoryContents').addEventListener('click', async () => {
+			///listDirectoryContents
+			TitanStorage.getInstance().listDirectoryContents({
+				page: 1,
+				parent: 0,
+				pageSize: 10
+			})
+				.then(res => {
+					console.log('listDirectoryContents:', res);
+
+				})
+				.catch(error => {
+					console.error('listDirectoryContents folder:', error);
+				});
+
+		});
+
+		document.getElementById('renameFolder').addEventListener('click', async () => {
+			/// createFolder 
+			TitanStorage.getInstance().renameFolder({
+				name: "folder000",
+				groupId: 331
+			}).then(res => {
+				console.log('renameFolder:', res);
+
+			}).catch(error => {
+				console.error('Error creating folder:', error);
+			});
+		});
+		document.getElementById('renameAsset').addEventListener('click', async () => {
+			/// createFolder 
+			TitanStorage.getInstance().renameAsset({
+				name: "修改名称",
+				assetId: "bafybeibs2r32o7bt2fz6v7sf4nmbunfaeldpwynum2cq5xzdk76xa6kge4"
+			}).then(res => {
+				console.log('renameAsset:', res);
+
+			}).catch(error => {
+				console.error('Error creating folder:', error);
+			});
+		});
+
+
+		document.getElementById('getltemDetails').addEventListener('click', async () => {
+			///getltemDetails
+			TitanStorage.getInstance().getltemDetails({ cId: "bafybeih3c63zmeksygxfdys46slcevidy6cikegmuvbnbvyrcqazqaluym" })
+				.then(data => {
+					console.log('getltemDetails:', data);
+				})
+				.catch(error => {
+					console.error('getltemDetails:', error);
+				});
+
+		});
+
+		document.getElementById('getUserProfile').addEventListener('click', async () => {
+			///getltemDetails
+			TitanStorage.getInstance().getUserProfile()
+				.then(data => {
+					console.log('getUserProfile:', data);
+				})
+				.catch(error => {
+					console.error('getUserProfile:', error);
+				});
+
+		});
+
+
+		document.getElementById('downloadAsset').addEventListener('click', async () => {
+			///下载 https://api-test1.container1.titannet.io/api/v1/storage/temp_file/share/bafkreianachejwgaf4fap7vnp3bsf62rnzkdnc3pgkwye7xwpxfuuavhbq
+			const options = {
+				areaId: "",
+				userId: "",
+				assetCid:"bafybeibyzkoipfpm4fnk6tuf5l6lymspbzbrqtp3kkgoogwfadbckzbx6q",
+				assetType: "file", //file,folder 
+				isOpen: false
+				// hasTempFile: true,
+				// tempFileName: "ip-route.txt",
+				// fileSize: 251,
+			}
+			TitanStorage.getInstance().downloadAsset(options, (progress) => {
+				console.log(`下载进度: ${progress}%`);
+			})
+				.then(res => {
+					console.log('downloadAsset:', res);
+
+				})
+				.catch(error => {
+					console.error('error:', error);
+				});
+
+		});
+
+
+
+		// 文件上传
+		let cancelUploadFn = null;
+		document.getElementById("cancelButton").addEventListener("click", function () {
+			if (cancelUploadFn) {
+				// 调用取消上传的函数
+				cancelUploadFn();
+			}
+		});
+		document.getElementById('uploadFileButton').addEventListener('click', async () => {
+			const fileInput = document.getElementById('fileInput');
+			const file = fileInput.files[0];
+			if (file) {
+				const sdk = TitanStorage.getInstance();
+				// const assetData = { areaId: ["xx"], groupId: 0, assetType: 0, extraId: "52145655" };
+				const assetData = { groupId: 0, assetType: 0 };
+				const result = await sdk.uploadAsset(
+					file,
+					assetData,
+					(loaded, total, percent) => {
+						console.log(`Progress for =${loaded}:${total}: ${percent.toFixed(2)}%`)
+					},
+					null,
+					(cancelFn) => {
+						// 绑定取消函数
+						cancelUploadFn = cancelFn;
+					}
+				);
+				console.log("uploadAsset:", result);
+			} else {
+				console.error('No file selected');
+			}
+		});
+		// 文件夹上传
+		document.getElementById('uploadFolderButton').addEventListener('click', async () => {
+			const fileInput = document.getElementById('folderInput');
+			const files = fileInput.files;
+			const sdk = TitanStorage.getInstance();
+			const assetData = { areaId: ["China"], groupId: 0, assetType: 1 };
+			var res = await sdk.uploadAsset(files, assetData,
+				(loaded, total, percent) => {
+					console.log(`Progress: ${percent.toFixed(2)}% (${loaded}/${total})`);
+				},
+				(status) => {
+					console.log("WritableStream status:", status);
+				},
+				(cancelFn) => {
+					cancelUploadFn = cancelFn; // 保存取消上传的函数
+				}
+			);
+			console.log("uploadAsset:", res);
+		});
+
+
+	});
+
+
+
+
+
+	// // 计算总大小的递归函数
+	// async function getTotalSize(files) {
+	// 	let totalSize = 0;
+
+	// 	for (const file of files) {
+	// 		if (file.webkitRelativePath) {
+	// 			// 如果文件具有相对路径，表示它在子文件夹中
+	// 			totalSize += file.size;
+	// 		}
+	// 	}
+
+	// 	return totalSize;
+	// }
+
+
+	// document.getElementById('uploadButton').addEventListener('click', async () => {
+	// 	const fileInput = document.getElementById('fileInput');
+	// 	const files = fileInput.files;
+
+
+	// 	let totalSize = await getTotalSize(files);
+
+
+	// 	const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2); // 将字节转换为MB
+	// 	console.log(`文件夹大小: ${totalSizeMB} MB`);
+
+
+	// 	const sdk = TitanStorage.getInstance();
+	// 	const assetData = { areaId: [], groupId: 0, assetType: 1 };
+	// 	var res = await sdk.uploadAsset(files, assetData,
+	// 		(loaded, total, percent) => {
+	// 			console.log(`Progress: ${percent.toFixed(2)}% (${loaded}/${total})`);
+	// 		},
+	// 		(status) => {
+	// 			console.log("WritableStream status:", status);
+	// 		}
+	// 	);
+	// 	console.log("result:", res);
+	// });
+
+
+
+
+</script>
+
+</html>

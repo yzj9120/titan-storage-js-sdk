@@ -512,6 +512,7 @@ class DownFile {
 
   // 保存下载的文件
   saveFile(blob, fileName, isOpen) {
+    console.log("saveFile=", fileName);
     const url = URL.createObjectURL(blob); // 创建 URL 对象
     const a = document.createElement("a"); // 创建下载链接
     a.href = url; // 设置链接地址
@@ -523,7 +524,9 @@ class DownFile {
     if (isOpen) {
       window.open(url); // 在新窗口中打开文件
     }
-    URL.revokeObjectURL(url); // 释放 URL 对象
+    setTimeout(() => {
+      URL.revokeObjectURL(url); // 释放 URL 对象
+    }, 1000);
   }
 }
 

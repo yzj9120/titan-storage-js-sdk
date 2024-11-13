@@ -82,7 +82,7 @@ class UploadLoader {
         assetData: md5,
       });
 
-      //console.log(111, res);
+      console.log(111, res);
 
       // 获取地址失败 直接反馈给用户
       if (res.code != 0) return res;
@@ -169,11 +169,16 @@ class UploadLoader {
           data: uploadResult.data ?? {},
         };
       }
+      console.log("uploadResults:", uploadResults);
+
+      console.log("handleFileUpload:", result);
       ///数据上报
       this.report.creatReportData(uploadResults, "upload");
       // 返回成功结果，保留 cId
       return result;
     } catch (error) {
+      console.log("handleFileUpload:error:", error);
+
       return onHandleData({ code: StatusCodes.FAILURE, msg: error });
     }
   }

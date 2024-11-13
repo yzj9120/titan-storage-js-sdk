@@ -48,6 +48,8 @@ class Report {
   }
   ///数据上报数据创建
   creatReportData(uploadResults, type) {
+    console.log("uploadResults:", uploadResults.length);
+
     if (uploadResults.length == 0) return;
     ///数据上报：
     const failedUploads = uploadResults;

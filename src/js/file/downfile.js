@@ -331,7 +331,10 @@ class DownFile {
     const scheduler = new DownloadScheduler(urls, chunkSize);
     scheduler.initializeChunks(fileSize);
     // // 检查每个 URL 的可用性
-    const availableUrls = await this.checkMultipleUrlsAvailability(urls);
+    // const availableUrls = await this.checkMultipleUrlsAvailability(urls);
+
+    const availableUrls = urls;
+
     const uploadResults = [];
     log(
       "init:" + chunkSize + "..." + urls.length + "..." + availableUrls.length

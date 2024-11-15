@@ -51,8 +51,17 @@ class Report {
     console.log("uploadResults:", uploadResults.length);
 
     if (uploadResults.length == 0) return;
-    ///数据上报：
-    const failedUploads = uploadResults;
+
+
+
+    // 按照 status=1 和 status=0 分开数据
+    const failedUploadsStatus1 = uploadResults.filter(result => result.status === 1);
+    const failedUploadsStatus2 = uploadResults.filter(result => result.status === 2);
+
+    // 如果存在 status=1 的数据，优先使用它
+    const failedUploads = failedUploadsStatus1.length > 0 ? failedUploadsStatus1 : failedUploadsStatus2;
+
+
     // 提取 nodeId，将其转为小写，并格式化为 "node1, node2, node3"
     const nodeIdsString = failedUploads
       .map((result) => result.nodeId.toLowerCase()) // 转为小写

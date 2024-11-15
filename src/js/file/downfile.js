@@ -140,7 +140,7 @@ class DownloadScheduler {
 
 class DownFile {
   constructor(Http) {
-    this.maxConcurrentDownloads = 10; // 最大并发数，限制同时下载的任务数量
+    this.maxConcurrentDownloads = 3; // 最大并发数，限制同时下载的任务数量
     this.maxRetries = 3; // 每个分片的最大重试次数
     this.report = new Report(Http); // 用于记录下载进度等信息
     this.lock = new SimpleLock(); // 简单锁，用于控制任务的顺序和并发

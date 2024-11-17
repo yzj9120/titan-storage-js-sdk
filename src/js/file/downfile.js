@@ -342,7 +342,6 @@ class DownFile {
         "..." +
         urls.length +
         "..." +
-        availableUrls.length +
         "...." +
         scheduler.chunkQueue.length
     );
@@ -356,32 +355,143 @@ class DownFile {
     const activeUrls = availableUrls.slice(); // 使用可用的 URL 列表
     const startTime = Date.now();
     this.adjustConcurrency();
-    let retries = 0;
-    // 循环直到所有分片都成功下载
-    // 获取可以并行下载的分片
+    const minConcurrentDownloads = 10; // 最少保持的并发任务数
+    const runningTasks = new Set(); // 当前正在运行的任务
 
-    while (scheduler.chunkQueue.length > 0) {
-      log("downloadFile...........");
-      const downloadTasks = [];
-      // 启动并发的下载任务，直到达到 maxConcurrentDownloads 或没有分片
-      while (
-        scheduler.chunkQueue.length > 0 &&
-        downloadTasks.length < this.maxConcurrentDownloads
-      ) {
-        const chunk = scheduler.getNextChunk(); // 获取下一个分片
-        const url = activeUrls[Math.floor(Math.random() * activeUrls.length)]; // 随机选择一个 URL
-        downloadTasks.push(this.downloadTask(url, chunk, scheduler)); // 启动下载任务
-      }
-      // 等待当前批次的所有下载任务完成
-      try {
-        var res = await Promise.all(downloadTasks);
-        log("downloadTasks:", { res });
-      } catch (error) {
-        // 捕获错误并记录失败的分片
-        log("Some download tasks failed.");
-        scheduler.failedChunks.push(...scheduler.chunkQueue); // 记录失败的分片
-      }
+    if (activeUrls.length === 0) {
+      return onHandleData({ code: -1, msg: "No available download nodes" });
     }
+
+    const scheduleTasks2 = async () => {
+      let taskCounter = 0; // 全局任务计数器，用于标记每个任务的唯一 ID
+
+      // 定义一个函数处理任务完成后的逻辑
+      const handleTaskCompletion = (
+        taskPromise,
+        taskId,
+        chunk,
+        success,
+        error
+      ) => {
+        runningTasks.delete(taskPromise); // 从任务池中移除任务
+        // if (success) {
+        //   log(
+        //     `✅ Task ${taskId} completed successfully for chunk: ${chunk.start}-${chunk.end}`
+        //   );
+        // } else {
+        //   log(
+        //     `❌ Task ${taskId} failed for chunk: ${chunk.start}-${chunk.end}. ${error}`
+        //   );
+        // }
+        tryScheduleTask(); // 调度新的任务，保持并发数量
+      };
+      // 调度任务的核心函数，负责实时检查并添加新任务
+      const tryScheduleTask = () => {
+        // 当当前运行任务数小于目标并发数，且队列中仍有待处理分片时，添加新任务
+        while (
+          runningTasks.size < minConcurrentDownloads && // 当前运行任务小于目标并发数
+          scheduler.chunkQueue.length > 0 // 队列中仍有未处理的分片
+        ) {
+          const chunk = scheduler.getNextChunk(); // 从队列中获取下一个分片
+          const url = activeUrls[Math.floor(Math.random() * activeUrls.length)]; // 随机选择一个下载 URL
+          const taskId = ++taskCounter; // 为任务分配一个唯一 ID
+          //log(`Task ${taskId} started for chunk: ${chunk.start}-${chunk.end}`); // 打印任务启动日志
+          // 创建下载任务，并处理任务完成后的逻辑
+          const taskPromise = this.downloadTask(url, chunk, scheduler)
+            .then((res) => {
+              // 成功处理：根据服务端返回决定是否成功
+              handleTaskCompletion(taskPromise, taskId, chunk, res.success);
+            })
+            .catch((error) => {
+              // 异常处理：统一标记任务失败
+              handleTaskCompletion(taskPromise, taskId, chunk, false, error);
+            });
+          // 将新任务添加到任务池中进行跟踪
+          runningTasks.add(taskPromise);
+        }
+      };
+      // 初始化任务调度，首次启动任务填满并发池
+      tryScheduleTask();
+      // 等待所有任务完成
+      // await Promise.all(runningTasks); // 确保所有任务完成后，调度函数退出
+      // log("All tasks completed."); // 打印所有任务完成的日志
+
+      // 调度任务，填满并发池
+      tryScheduleTask();
+
+      // 持续检查任务是否全部完成
+      while (runningTasks.size > 0 || scheduler.chunkQueue.length > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 10)); // 每 100ms 检查一次
+        tryScheduleTask(); // 调度新的任务
+      }
+
+      log("All tasks completed."); // 打印所有任务完成的日志
+    };
+    // 启动任务调度
+
+    // （二）
+    const scheduleTasks = async () => {
+      let taskCounter = 0; // 全局任务计数器，用于标记任务的唯一 ID
+
+      // 调度器主循环：持续运行，直到分片队列和任务池都为空
+      while (scheduler.chunkQueue.length > 0 || runningTasks.size > 0) {
+        // 内部循环：确保任务池中至少有 minConcurrentDownloads 个任务
+        while (
+          runningTasks.size < minConcurrentDownloads && // 当前运行任务少于最小并发数
+          scheduler.chunkQueue.length > 0 // 还有未下载的分片
+        ) {
+          // 从分片队列中获取下一个任务分片
+          const chunk = scheduler.getNextChunk();
+          // 随机从可用的 URL 中选择一个作为下载目标
+          const url = activeUrls[Math.floor(Math.random() * activeUrls.length)];
+          const taskId = ++taskCounter; // 给任务分配一个唯一 ID
+          // 创建下载任务，并处理其成功或失败后的逻辑
+          const taskPromise = this.downloadTask(url, chunk, scheduler)
+            .then(() => {
+              // 下载成功后，从任务池中移除该任务
+              runningTasks.delete(taskPromise);
+            })
+            .catch((error) => {
+              // 下载失败：记录失败的分片，并从任务池中移除该任务
+              runningTasks.delete(taskPromise);
+            });
+          // 将任务添加到任务池中进行跟踪
+          runningTasks.add(taskPromise);
+        }
+
+        // 如果任务池中已有足够多的任务，等待其中任意一个完成
+        if (runningTasks.size >= minConcurrentDownloads) {
+          await Promise.race(runningTasks);
+        }
+
+        // 使用短暂的延迟释放主线程，避免阻塞 UI 或事件循环
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    };
+
+    await scheduleTasks2();
+    // （1）
+    // while (scheduler.chunkQueue.length > 0) {
+    //   log("downloadFile...........");
+    //   const downloadTasks = [];
+    //   // 启动并发的下载任务，直到达到 maxConcurrentDownloads 或没有分片
+    //   while (
+    //     scheduler.chunkQueue.length > 0 &&
+    //     downloadTasks.length < this.maxConcurrentDownloads
+    //   ) {
+    //     const chunk = scheduler.getNextChunk(); // 获取下一个分片
+    //     const url = activeUrls[Math.floor(Math.random() * activeUrls.length)]; // 随机选择一个 URL
+    //     downloadTasks.push(this.downloadTask(url, chunk, scheduler)); // 启动下载任务
+    //   }
+    //   // 等待当前批次的所有下载任务完成
+    //   try {
+    //     var res = await Promise.all(downloadTasks);
+    //     log("downloadTasks:", { res });
+    //   } catch (error) {
+    //     // 捕获错误并记录失败的分片
+    //     log("Some download tasks failed.");
+    //   }
+    // }
 
     log(
       "down:",
@@ -392,6 +502,8 @@ class DownFile {
         scheduler.failedChunks.length
     );
 
+    //（一）
+    const maxRetries = availableUrls.length;
     while (scheduler.hasFailedChunks()) {
       log("failedChunks:", scheduler.failedChunks);
       for (const failedChunk of [...scheduler.failedChunks]) {
@@ -435,7 +547,7 @@ class DownFile {
               this.progressCallback(progress);
             }
 
-            log("Retry:failedChunks:", scheduler.failedChunks);
+            log("Retry:failedChunks:" + scheduler.failedChunks);
             scheduler.markChunkCompleted(
               { start: failedChunk.start, blob },
               urlToRetry
@@ -443,7 +555,7 @@ class DownFile {
           } else {
             failedChunk.retries++;
             this.urlStats[urlToRetry].failure++; // 记录失败下载
-            log(`Retry:failedChunks failed:`, scheduler.failedChunks);
+            log(`Retry:failedChunks failed:` + scheduler.failedChunks);
           }
         } catch (error) {
           // 增加重试次数
@@ -510,6 +622,7 @@ class DownFile {
       });
     }
   }
+
   //合并所有下载成功的分片
   mergeChunks(chunks, mimeType) {
     const sortedChunks = chunks.sort((a, b) => a.start - b.start);

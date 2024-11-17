@@ -332,19 +332,10 @@ class DownFile {
     scheduler.initializeChunks(fileSize);
     // // 检查每个 URL 的可用性
     // const availableUrls = await this.checkMultipleUrlsAvailability(urls);
-
     const availableUrls = urls;
-
     const uploadResults = [];
     log(
-      "init:" +
-        chunkSize +
-        "..." +
-        urls.length +
-        "..." +
-        availableUrls.length +
-        "...." +
-        scheduler.chunkQueue.length
+      "init:" + chunkSize + "..." + urls.length + "..." + availableUrls.length
     );
     if (availableUrls.length === 0) {
       return onHandleData({ code: -1, msg: "No available download nodes" });
@@ -359,9 +350,7 @@ class DownFile {
     let retries = 0;
     // 循环直到所有分片都成功下载
     // 获取可以并行下载的分片
-
     while (scheduler.chunkQueue.length > 0) {
-      log("downloadFile...........");
       const downloadTasks = [];
       // 启动并发的下载任务，直到达到 maxConcurrentDownloads 或没有分片
       while (

@@ -103,6 +103,10 @@ const esmConfig = {
   experiments: {
     outputModule: true,
   },
+  devServer: {
+    // ...devConfig.devServer,
+    hot: false, // 禁用 HMR 对于 ESM 配置
+  },
 };
 
 const cjsConfig = {

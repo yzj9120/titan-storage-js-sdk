@@ -10,7 +10,6 @@ export class Http {
     // this.url = "/apis";
     // build
 
-
     if (!this.url) {
       ///GET
 
@@ -182,9 +181,7 @@ export class Http {
    */
 
   uploadFile(endpoint, uptoken, file, additionalData = {}, onProgress, signal) {
-
     return new Promise((resolve, reject) => {
-
       const xhr = new XMLHttpRequest();
       const requestUrl = `${endpoint}`;
       if (!this.token || this.token.trim() === "") {
@@ -216,8 +213,9 @@ export class Http {
       };
       // Handle errors
       xhr.onerror = () => {
-        const errorMessage = `File upload failed: ${xhr.statusText || "Handle network errors"
-          }`;
+        const errorMessage = `File upload failed: ${
+          xhr.statusText || "Handle network errors"
+        }`;
         reject(
           onHandleData({ code: StatusCodes.FETCH_ERROR, msg: errorMessage })
         );

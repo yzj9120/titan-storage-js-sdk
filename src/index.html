@@ -367,6 +367,16 @@
 				// tempFileName: "ip-route.txt",
 				// fileSize: 251,
 			}
+
+			TitanStorage.getInstance().getDownLoadUrls(options)
+				.then(res => {
+					console.log('getDownLoadUrls:', res);
+
+				})
+				.catch(error => {
+					console.error('error:', error);
+				});
+
 			TitanStorage.getInstance().downloadAsset(options, (progress) => {
 				console.log(`下载进度: ${progress}%`);
 			})

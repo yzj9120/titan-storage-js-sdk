@@ -239,6 +239,16 @@ class TitanStorage {
     const data = await this.commService.onFileDown(options, onProgress);
     return data;
   }
+
+
+  async getDownLoadUrls(
+    options = {
+      assetCid: ""
+    }
+  ) {
+    const data = await this.commService.getDownLoadUrls(options);
+    return data;
+  }
 }
 
 export default TitanStorage;

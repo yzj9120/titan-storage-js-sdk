@@ -424,6 +424,23 @@ class CommService {
       return res;
     }
   }
+
+  async getDownLoadUrls(options = {
+    assetCid: ""
+  },) {
+    const {
+      assetCid
+    } = options;
+    const validateAssetCid = Validator.validateAssetCid(assetCid);
+    if (validateAssetCid) return validateAssetCid;
+    const res = await this.httpService.getFileDownURL({
+      assetCid,
+      userId: null,
+      areaId: null,
+      hasTempFile: false,
+    });
+    return res;
+  }
 }
 
 export default CommService;

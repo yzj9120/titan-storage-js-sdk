@@ -77,9 +77,19 @@ const devConfig = {
     contentBase: path.join(__dirname, "dist"), // 指定静态文件目录
     compress: true, // 启用 gzip 压缩
     port: 9000, // 指定端口
-    hot: false, // 启用 HMR
+    hot: false, // 禁用 HMR
+    proxy: {
+      "/api": {
+        target: "http://your-backend-server.com", // 后端服务器地址
+        changeOrigin: true, // 是否修改源
+        pathRewrite: {
+          "^/api": "", // 移除路径中的 `/api`
+        },
+      },
+    },
   },
 };
+
 
 const umdConfig = {
   ...commonConfig,

@@ -117,6 +117,9 @@ class FolderLoader {
           nodeId: nodeId,
           cId: uploadResult.cid ?? "",
           log: uploadResult.code === 0 ? "" : { [nodeId]: uploadResult.msg },
+          urlSize: uploadAddresses.List.length ?? 0,
+          availableNodes: uploadAddresses.available_nodes ?? null,
+          fastestTime:0,
           ...uploadResult, // 保留原始上传结果
         });
 
@@ -129,7 +132,7 @@ class FolderLoader {
 
       //相同用户上传同个文件会返回1017（逻辑为文件已存在，不能继续上传）
       if (res.data.err && res.data.err === 1017) {
-        let cleanUrl = await this.getDownurl(streaRes.data.rootCid)
+        let cleanUrl = await this.getDownurl(streaRes.data.rootCid);
         return onHandleData({
           code: 0,
           data: {
@@ -140,9 +143,11 @@ class FolderLoader {
         });
       }
       // 当返回为空数组（那是不同用户上传相同文件，要显示上传成功 但是不是真实上传）
-      else if ((res.code == 0 && (res.data.List ?? []).length == 0) ||
-        (res.code == 0 && (res.data ?? []).length == 0)) {
-        let cleanUrl = await this.getDownurl(uploadResult.cid)
+      else if (
+        (res.code == 0 && (res.data.List ?? []).length == 0) ||
+        (res.code == 0 && (res.data ?? []).length == 0)
+      ) {
+        let cleanUrl = await this.getDownurl(uploadResult.cid);
         return onHandleData({
           code: 0,
           data: {
@@ -152,7 +157,6 @@ class FolderLoader {
           },
         });
       }
-
 
       // if (
       //   (res.data.err && res.data.err === 1017) ||
@@ -185,7 +189,7 @@ class FolderLoader {
       this.report.creatReportData(uploadResults, "upload");
       // 处理上传结果
       if (uploadResult.code === 0) {
-        let cleanUrl = await this.getDownurl(streaRes.data.rootCid)
+        let cleanUrl = await this.getDownurl(streaRes.data.rootCid);
         // 返回成功结果，保留 cId
         return {
           ...uploadResult,
@@ -312,7 +316,8 @@ class FolderLoader {
 
       for (let attempts = 0; attempts < retryCount; attempts++) {
         log(
-          `Processing address ${index + 1}/${addresses.length}, attempt ${attempts + 1
+          `Processing address ${index + 1}/${addresses.length}, attempt ${
+            attempts + 1
           }/${retryCount}`
         );
 
@@ -362,14 +367,14 @@ class FolderLoader {
       this.abortController = null; // 清空 controller
     }
   }
-  async getDownurl(assetCid,) {
+  async getDownurl(assetCid) {
     const { data } = await this.httpService.getFileDownURL({
       assetCid: assetCid,
       userId: "",
       areaId: null,
-      hasTempFile: false
+      hasTempFile: false,
     });
-    let cleanUrl = ""
+    let cleanUrl = "";
     if (data?.url?.length > 0) {
       cleanUrl = data.url[0];
     }

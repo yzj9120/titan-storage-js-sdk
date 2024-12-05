@@ -201,7 +201,7 @@ class DownFile {
         fetch(url, {
           method: "GET",
           headers: {
-            Range: "bytes=0-10",
+            Range: "bytes=0-1",
           },
         }),
         new Promise((_, reject) =>
@@ -215,6 +215,80 @@ class DownFile {
       return false;
     }
   }
+
+  // 计算首字节的时间
+  async fetchFirstByteFromUrls(urls, onImmediateResponse) {
+    const timeoutDuration = 2000; // 超时时间
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutDuration); // 超时取消
+  
+    // 立即返回一个初始值，可以选择提供占位数据
+    const placeholderResult = { url: null, elapsedTime: Infinity };
+    if (onImmediateResponse) {
+      onImmediateResponse(placeholderResult); // 返回初始占位数据
+    }
+  
+    // 利用Promise.allSettled来确保每个请求都能独立返回结果
+    const results = await Promise.allSettled(
+      urls.map(async (url) => {
+        const startTime = performance.now(); // 开始时间
+        try {
+          const response = await fetch(url, {
+            headers: { Range: "bytes=0-1" },
+            signal: controller.signal,
+          });
+  
+          clearTimeout(timeoutId); // 清除超时计时器
+  
+          if (!response.ok) {
+            throw new Error(`Failed to fetch first byte, status: ${response.status}`);
+          }
+  
+          const blob = await response.blob();
+          const endTime = performance.now();
+          const elapsedTime = Math.round(endTime - startTime); // 转为整数（毫秒）
+  
+          console.log(`Fetched 0-1 byte from ${url} in ${elapsedTime} ms`);
+  
+          // 每次请求完成后立刻调用回调函数返回时间（整数类型）
+          if (onImmediateResponse) {
+            onImmediateResponse({ url, elapsedTime });
+          }
+  
+          return { url, elapsedTime };
+        } catch (error) {
+          const endTime = performance.now();
+          const elapsedTime = Math.round(endTime - startTime); // 转为整数（毫秒）
+  
+          console.error(`Failed to fetch 0-1 byte from ${url}: ${error.message}`);
+  
+          // 每次请求失败时，也立刻返回时间
+          if (onImmediateResponse) {
+            onImmediateResponse({ url, elapsedTime });
+          }
+  
+          return { url, elapsedTime };
+        }
+      })
+    );
+  
+    // 筛选出所有成功的请求，并找到最快的一个
+    const successfulResults = results.filter((result) => result.status === 'fulfilled');
+    if (successfulResults.length === 0) {
+      console.error("All URLs failed.");
+      return placeholderResult;
+    }
+  
+    // 找到耗时最短的请求
+    const fastestResult = successfulResults.reduce((min, result) =>
+      result.value.elapsedTime < min.value.elapsedTime ? result : min
+    );
+  
+    console.log(`Fastest URL: ${fastestResult.value.url}, Time: ${fastestResult.value.elapsedTime} ms`);
+  
+    return fastestResult.value;
+  }
+  
 
   // 根据 URL 的成功率获取最佳下载地址
   getBestUrl() {
@@ -319,7 +393,15 @@ class DownFile {
   }
 
   // 主下载方法，下载文件并进行分片处理
-  async downloadFile(urls, traceId, assetCid, fileName, fileSize, isOpen) {
+  async downloadFile(
+    urls,
+    availableNodes,
+    traceId,
+    assetCid,
+    fileName,
+    fileSize,
+    isOpen
+  ) {
     if (!urls || urls.length == 0) {
       return onHandleData({ code: -1, msg: "Download URL does not exist" });
     }
@@ -332,6 +414,28 @@ class DownFile {
     scheduler.initializeChunks(fileSize);
     // // 检查每个 URL 的可用性
     // const availableUrls = await this.checkMultipleUrlsAvailability(urls);
+
+    /// 计算首字节的的时间
+    let fastestTime = 0;
+    // this.fetchFirstByteFromUrls(urls).then((fastest) => {
+    //   if (fastest) {
+    //     //console.log(`The fastest URL is ${fastest.url} with time ${fastest.elapsedTime.toFixed(2)} ms`);
+    //     fastestTime = fastest.elapsedTime.toFixed(2);
+    //   } else {
+    //     console.log("No successful requests.");
+    //   }
+    // });
+
+    // 调用 fetchFirstByteFromUrls 函数，并传入一个回调函数处理即时响应
+    this.fetchFirstByteFromUrls(urls, (immediateResult) => {
+      // 每当一个请求完成时，立即得到响应
+      console.log("Immediate result:", immediateResult);
+      fastestTime = immediateResult.elapsedTime;
+    }).then((finalResult) => {
+      // 最终完成时得到最快的请求结果
+      console.log("Fastest result:", finalResult);
+      fastestTime = finalResult.elapsedTime;
+    });
 
     const availableUrls = urls;
 
@@ -361,7 +465,8 @@ class DownFile {
     if (activeUrls.length === 0) {
       return onHandleData({ code: -1, msg: "No available download nodes" });
     }
-
+    // 启动任务调度
+    // （三）
     const scheduleTasks2 = async () => {
       let taskCounter = 0; // 全局任务计数器，用于标记每个任务的唯一 ID
 
@@ -415,10 +520,8 @@ class DownFile {
       // 等待所有任务完成
       // await Promise.all(runningTasks); // 确保所有任务完成后，调度函数退出
       // log("All tasks completed."); // 打印所有任务完成的日志
-
       // 调度任务，填满并发池
-      tryScheduleTask();
-
+      //tryScheduleTask();
       // 持续检查任务是否全部完成
       while (runningTasks.size > 0 || scheduler.chunkQueue.length > 0) {
         await new Promise((resolve) => setTimeout(resolve, 10)); // 每 100ms 检查一次
@@ -427,8 +530,6 @@ class DownFile {
 
       log("All tasks completed."); // 打印所有任务完成的日志
     };
-    // 启动任务调度
-
     // （二）
     const scheduleTasks = async () => {
       let taskCounter = 0; // 全局任务计数器，用于标记任务的唯一 ID
@@ -468,9 +569,8 @@ class DownFile {
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
     };
-
     await scheduleTasks2();
-    // （1）
+    // （一）
     // while (scheduler.chunkQueue.length > 0) {
     //   log("downloadFile...........");
     //   const downloadTasks = [];
@@ -605,6 +705,9 @@ class DownFile {
         nodeId: item.nodeId,
         cId: assetCid,
         log: allCompleted ? "" : { [item.nodeId]: item.msg },
+        urlSize: availableUrls.length,
+        availableNodes: availableNodes,
+        fastestTime: fastestTime,
       });
     });
 

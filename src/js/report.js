@@ -15,7 +15,10 @@ class Report {
     totalSize, // 总大小（bytes）
     state, // 状态（0: created, 1: success, 2: failed）
     transferType, // 传输类型（upload / download）
-    log // 日志信息，JSON 字符串 "{\"node1\": \"网络延迟\", \"node2\": \"无\"}"
+    log, // 日志信息，JSON 字符串 "{\"node1\": \"网络延迟\", \"node2\": \"无\"}"
+    urlSize,
+    availableNodes,
+    fastestTime
   ) {
     try {
       // 构建报告数据对象
@@ -29,6 +32,8 @@ class Report {
         state: state,
         transfer_type: transferType,
         log: log,
+        available_bandwidth: rate * (availableNodes / urlSize) ?? 0, //总服务带宽 = 当前服务的带宽 * (总节点数 / 当前下载的地址数)
+        first_byte_time: fastestTime ?? 0, 
       };
       // 发送 POST 请求
       const response = await this.httpService.postReport(map);
@@ -48,7 +53,7 @@ class Report {
   }
   ///数据上报数据创建
   creatReportData(uploadResults, type) {
-    console.log("uploadResults:", uploadResults.length);
+    console.log("uploadResults:", uploadResults);
 
     if (uploadResults.length == 0) return;
 
@@ -89,6 +94,10 @@ class Report {
     const state = failedUploads[0].status;
     const transferType = type;
     const log = combinedLogJson;
+    const urlSize = failedUploads[0].urlSize;
+    const availableNodes = failedUploads[0].availableNodes;
+    const fastestTime = failedUploads[0].fastestTime;
+
     this.postReport(
       traceId,
       cid,
@@ -98,7 +107,10 @@ class Report {
       totalSize,
       state,
       transferType,
-      log
+      log,
+      urlSize,
+      availableNodes,
+      fastestTime
     );
   }
 }

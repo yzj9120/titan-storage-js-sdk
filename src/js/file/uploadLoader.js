@@ -133,6 +133,9 @@ class UploadLoader {
           nodeId: nodeId,
           cId: uploadResult.cid ?? "",
           log: uploadResult.code === 0 ? "" : { [nodeId]: uploadResult.msg },
+          urlSize: uploadAddresses.List.length ?? 0,
+          availableNodes: uploadAddresses.available_nodes ?? null,
+          fastestTime: 0,
           ...uploadResult, // 保留原始上传结果
         });
         uploadResult.nodeId = address.NodeID;

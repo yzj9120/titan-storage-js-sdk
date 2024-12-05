@@ -343,7 +343,7 @@ class CommService {
       hasTempFile: false,
       tempFileName: "",
       fileSize: 0,
-      isOpen: false
+      isOpen: false,
     },
     onProgress
   ) {
@@ -354,7 +354,8 @@ class CommService {
       areaId,
       hasTempFile,
       tempFileName,
-      fileSize, isOpen
+      fileSize,
+      isOpen,
     } = options;
 
     const validateAssetCid = Validator.validateAssetCid(assetCid);
@@ -383,6 +384,7 @@ class CommService {
 
       const filesize = res.data.size ?? fileSize;
       const traceId = res.data.trace_id;
+      const availableNodes = res.data.available_nodes;
 
       // 实例化 Downloader
       if (assetType == "folder") {
@@ -390,6 +392,7 @@ class CommService {
 
         var downresult = await downloader.downloadFromMultipleUrls(
           urls,
+          availableNodes,
           traceId,
           assetCid,
           fileName,
@@ -406,7 +409,9 @@ class CommService {
           }
         });
         // 开始下载文件
-        var downresult = await downloader.downloadFile(urls,
+        var downresult = await downloader.downloadFile(
+          urls,
+          availableNodes,
           traceId,
           assetCid,
           fileName,
@@ -425,12 +430,12 @@ class CommService {
     }
   }
 
-  async getDownLoadUrls(options = {
-    assetCid: ""
-  },) {
-    const {
-      assetCid
-    } = options;
+  async getDownLoadUrls(
+    options = {
+      assetCid: "",
+    }
+  ) {
+    const { assetCid } = options;
     const validateAssetCid = Validator.validateAssetCid(assetCid);
     if (validateAssetCid) return validateAssetCid;
     const res = await this.httpService.getFileDownURL({

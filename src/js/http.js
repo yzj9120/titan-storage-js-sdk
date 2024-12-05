@@ -12,10 +12,10 @@ export class Http {
 
     if (!this.url) {
       ///GET
-
+      // 正式
       this.url = "https://api-test1.container1.titannet.io";
-
-      // this.url="https://storage-test.titannet.io"
+      // 测试
+      // this.url="https://storage-test-api.titannet.io"
     }
     if (!token || token.trim() === "") {
       log(StatusCodes.API_KEY_EMPTY, "");

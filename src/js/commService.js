@@ -367,8 +367,10 @@ class CommService {
       userId,
       areaId,
       hasTempFile,
+      needTrace:true
     });
     log("sdk...downurl：", res);
+
 
     if (res.code === 0) {
       const urls = res.data.url;

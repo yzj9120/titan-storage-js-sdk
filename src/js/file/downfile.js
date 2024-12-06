@@ -218,7 +218,7 @@ class DownFile {
 
   // 计算首字节的时间
   async fetchFirstByteFromUrls(urls, onImmediateResponse) {
-    const timeoutDuration = 2000; // 超时时间
+    const timeoutDuration = 2500; // 超时时间
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutDuration); // 超时取消
   
@@ -414,18 +414,8 @@ class DownFile {
     scheduler.initializeChunks(fileSize);
     // // 检查每个 URL 的可用性
     // const availableUrls = await this.checkMultipleUrlsAvailability(urls);
-
     /// 计算首字节的的时间
     let fastestTime = 0;
-    // this.fetchFirstByteFromUrls(urls).then((fastest) => {
-    //   if (fastest) {
-    //     //console.log(`The fastest URL is ${fastest.url} with time ${fastest.elapsedTime.toFixed(2)} ms`);
-    //     fastestTime = fastest.elapsedTime.toFixed(2);
-    //   } else {
-    //     console.log("No successful requests.");
-    //   }
-    // });
-
     // 调用 fetchFirstByteFromUrls 函数，并传入一个回调函数处理即时响应
     this.fetchFirstByteFromUrls(urls, (immediateResult) => {
       // 每当一个请求完成时，立即得到响应

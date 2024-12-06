@@ -32,8 +32,8 @@ class Report {
         state: state,
         transfer_type: transferType,
         log: log,
-        available_bandwidth: rate * (availableNodes / urlSize) ?? 0, //总服务带宽 = 当前服务的带宽 * (总节点数 / 当前下载的地址数)
-        first_byte_time: fastestTime ?? 0, 
+        available_bandwidth: Math.floor(rate * (availableNodes / urlSize)) ?? 0, //总服务带宽 = 当前服务的带宽 * (总节点数 / 当前下载的地址数)
+        first_byte_time: fastestTime ?? 0,
       };
       // 发送 POST 请求
       const response = await this.httpService.postReport(map);

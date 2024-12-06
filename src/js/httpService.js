@@ -1,3 +1,5 @@
+import { log } from "./errorHandler";
+
 class HttpService {
   constructor(http) {
     this.Http = http;
@@ -52,9 +54,8 @@ class HttpService {
     }
   }
 
-
   ///Get download address
-  async getFileDownURL({ assetCid, userId, areaId, hasTempFile }) {
+  async getFileDownURL({ assetCid, userId, areaId, hasTempFile, needTrace }) {
     let url;
     // 判断下载路径
     if (hasTempFile) {
@@ -63,11 +64,16 @@ class HttpService {
       url = `/api/v1/storage/open_asset?user_id=${userId}&asset_cid=${assetCid}`;
     } else {
       url = `/api/v1/storage/share_asset?asset_cid=${assetCid}`;
+
+      if (needTrace) {
+        url += "&need_trace=true";
+      }
     }
     // 如果有 areaId，则追加到 URL
-    if (areaId !=null && areaId!="") {
+    if (areaId != null && areaId != "") {
       url += `&area_id=${encodeURIComponent(areaId)}`;
     }
+
     return await this.Http.getData(url);
   }
 

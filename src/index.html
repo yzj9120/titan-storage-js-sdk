@@ -143,8 +143,8 @@
 			cid: "bafybeiewzxopyhrogetdvnr2jx4pkgurhicl4gqie5n3q6ykhl3oowhmgu"
 		},
 		{
-			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzM0NDkwNzEsImlkIjoidGl0YW4xamg0bnRmd3lsOXhxazllaGcycTdzNDR3OTlhZjkzOWpjZ3JkMmQiLCJvcmlnX2lhdCI6MTczMzM2MjY3MSwicm9sZSI6MH0.UEEh-x7BGTg7F-8_948mCb_Y6SuGOrsh2moll_PnHbY",
-			cid: "bafybeidl5xxirqus2a7xrwlrsneweixlbumr3u7egt66mehynbdvmuntxa"
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzM1NDE4NzUsImlkIjoidGl0YW4xamg0bnRmd3lsOXhxazllaGcycTdzNDR3OTlhZjkzOWpjZ3JkMmQiLCJvcmlnX2lhdCI6MTczMzQ1NTQ3NSwicm9sZSI6MH0.Y-8wi6r85mERNVCPr5R_v0R-DAO7-xnJlqimTssq7dA",
+			cid: "bafkreicivdmjxfxywooqyjun6zb5zusbciubgcef4lhygr7aw2dhjj3cei"
 
 		},
 
@@ -368,14 +368,14 @@
 				// fileSize: 251,
 			}
 
-			TitanStorage.getInstance().getDownLoadUrls(options)
-				.then(res => {
-					console.log('getDownLoadUrls:', res);
+			// TitanStorage.getInstance().getDownLoadUrls(options)
+			// 	.then(res => {
+			// 		console.log('getDownLoadUrls:', res);
 
-				})
-				.catch(error => {
-					console.error('error:', error);
-				});
+			// 	})
+			// 	.catch(error => {
+			// 		console.error('error:', error);
+			// 	});
 
 			TitanStorage.getInstance().downloadAsset(options, (progress) => {
 				console.log(`下载进度: ${progress}%`);
